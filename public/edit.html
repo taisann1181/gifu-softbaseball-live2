@@ -13,6 +13,7 @@
       <h1>速報編集ページ</h1>
       <p class="sub">大会情報 → スタメン → 速報入力 の順で進みます。</p>
     </div>
+
     <div class="buttonRow">
       <a class="editLink" href="./index.html">閲覧ページ</a>
       <button class="editLink" type="button" onclick="openNewGameIssue()">新しく試合をつくる</button>
@@ -34,7 +35,7 @@
         </label>
 
         <label>会場
-          <input id="matchVenue" placeholder="例：夜明け前🏟️">
+          <input id="matchVenue" placeholder="例：中津川公園野球場">
         </label>
 
         <label>試合名
@@ -68,6 +69,7 @@
 
       <div id="pitcherRow" class="pitcherRow" hidden>
         <h3>P.</h3>
+
         <div class="lineupInputRow">
           <span>P.</span>
           <input id="pitcherName" placeholder="投手名">
@@ -93,33 +95,33 @@
         </label>
 
         <label>表/裏
-          <select id="eventHalf" onchange="syncTeamNames()">
+          <select id="eventHalf" onchange="syncTeamNames(); syncEventFields();">
             <option value="top">表</option>
             <option value="bottom">裏</option>
           </select>
         </label>
 
-        <label><span id="awayRunsLabel">先攻 得点</span>
+        <label id="awayRunsBox"><span id="awayRunsLabel">先攻 得点</span>
           <select id="awayRuns"></select>
         </label>
 
-        <label><span id="homeRunsLabel">後攻 得点</span>
+        <label id="homeRunsBox"><span id="homeRunsLabel">後攻 得点</span>
           <select id="homeRuns"></select>
         </label>
 
-        <label><span id="awayHitsLabel">先攻 安打</span>
+        <label id="awayHitsBox"><span id="awayHitsLabel">先攻 安打</span>
           <select id="awayHits"></select>
         </label>
 
-        <label><span id="homeHitsLabel">後攻 安打</span>
+        <label id="homeHitsBox"><span id="homeHitsLabel">後攻 安打</span>
           <select id="homeHits"></select>
         </label>
 
-        <label><span id="awayErrorsLabel">先攻 失策</span>
+        <label id="awayErrorsBox"><span id="awayErrorsLabel">先攻 失策</span>
           <select id="awayErrors"></select>
         </label>
 
-        <label><span id="homeErrorsLabel">後攻 失策</span>
+        <label id="homeErrorsBox"><span id="homeErrorsLabel">後攻 失策</span>
           <select id="homeErrors"></select>
         </label>
       </div>
@@ -177,7 +179,9 @@
     }
 
     function fillNumberSelect(id, max) {
-      el(id).innerHTML = Array.from({ length: max + 1 }, (_, i) => optionHtml(i)).join("");
+      el(id).innerHTML = Array.from({ length: max + 1 }, (_, i) => {
+        return optionHtml(i, String(i));
+      }).join("");
     }
 
     function fillInningSelect() {
@@ -190,11 +194,14 @@
     function fillLineupTeamSelect() {
       const away = value("awayTeam") || "先攻";
       const home = value("homeTeam") || "後攻";
+      const current = value("lineupTeam") || "away";
 
       el("lineupTeam").innerHTML = `
         <option value="away">${away}</option>
         <option value="home">${home}</option>
       `;
+
+      el("lineupTeam").value = current;
     }
 
     function positionSelectHtml(id) {
@@ -222,8 +229,9 @@
     }
 
     function checkDh() {
-      const hasDh = Array.from({ length: 9 }, (_, i) => value(`playerPos${i + 1}`))
-        .some((pos) => pos === "D");
+      const hasDh = Array.from({ length: 9 }, (_, i) => {
+        return value(`playerPos${i + 1}`);
+      }).some((pos) => pos === "D");
 
       el("pitcherRow").hidden = !hasDh;
     }
@@ -240,17 +248,37 @@
       el("homeHitsLabel").textContent = `${home} 安打`;
       el("awayErrorsLabel").textContent = `${away} 失策`;
       el("homeErrorsLabel").textContent = `${home} 失策`;
+
+      syncEventFields();
+    }
+
+    function syncEventFields() {
+      const half = value("eventHalf");
+
+      const topVisible = ["awayRunsBox", "awayHitsBox", "homeErrorsBox"];
+      const bottomVisible = ["homeRunsBox", "homeHitsBox", "awayErrorsBox"];
+
+      if (half === "top") {
+        topVisible.forEach((id) => el(id).hidden = false);
+        bottomVisible.forEach((id) => el(id).hidden = true);
+      } else {
+        topVisible.forEach((id) => el(id).hidden = true);
+        bottomVisible.forEach((id) => el(id).hidden = false);
+      }
     }
 
     function nextStep() {
       el(`step${currentStep}`).hidden = true;
       currentStep = Math.min(3, currentStep + 1);
       el(`step${currentStep}`).hidden = false;
+
       syncTeamNames();
+      syncEventFields();
     }
 
     function wrap(obj) {
-      el("output").value = "```livejson\n" + JSON.stringify(obj, null, 2) + "\n```";
+      el("output").value =
+        "```livejson\n" + JSON.stringify(obj, null, 2) + "\n```";
     }
 
     function makeMatchCommand() {
@@ -303,19 +331,35 @@
     }
 
     function makeEventCommand() {
-      wrap({
+      const half = value("eventHalf");
+
+      const command = {
         type: "event",
         inning: num("eventInning"),
-        half: value("eventHalf"),
-        awayRuns: num("awayRuns"),
-        homeRuns: num("homeRuns"),
-        awayHits: num("awayHits"),
-        homeHits: num("homeHits"),
-        awayErrors: num("awayErrors"),
-        homeErrors: num("homeErrors"),
+        half,
+        awayRuns: 0,
+        homeRuns: 0,
+        awayHits: 0,
+        homeHits: 0,
+        awayErrors: 0,
+        homeErrors: 0,
         final: el("finalCheck").checked,
         text: value("eventText")
-      });
+      };
+
+      if (half === "top") {
+        command.awayRuns = num("awayRuns");
+        command.awayHits = num("awayHits");
+        command.homeErrors = num("homeErrors");
+      }
+
+      if (half === "bottom") {
+        command.homeRuns = num("homeRuns");
+        command.homeHits = num("homeHits");
+        command.awayErrors = num("awayErrors");
+      }
+
+      wrap(command);
     }
 
     async function copyOutput() {
@@ -363,12 +407,20 @@
     function init() {
       fillInningSelect();
 
-      ["awayRuns", "homeRuns", "awayHits", "homeHits", "awayErrors", "homeErrors"].forEach((id) => {
+      [
+        "awayRuns",
+        "homeRuns",
+        "awayHits",
+        "homeHits",
+        "awayErrors",
+        "homeErrors"
+      ].forEach((id) => {
         fillNumberSelect(id, 20);
       });
 
       buildLineupRows();
       syncTeamNames();
+      syncEventFields();
       loadCurrentIssueUrl();
     }
 
