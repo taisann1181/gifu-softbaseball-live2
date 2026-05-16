@@ -11,146 +11,293 @@
     <div>
       <p class="eyebrow">LIVE EDITOR</p>
       <h1>速報編集ページ</h1>
-      <p class="sub">入力内容をJSON化して、Issueコメントに貼り付けます。</p>
+      <p class="sub">大会情報 → スタメン → 速報入力 の順で進みます。</p>
     </div>
-    <a class="editLink" href="./index.html">閲覧ページ</a>
+    <div class="buttonRow">
+      <a class="editLink" href="./index.html">閲覧ページ</a>
+      <button class="editLink" type="button" onclick="openNewGameIssue()">新しく試合をつくる</button>
+    </div>
   </header>
 
   <main class="container">
-    <section class="panel">
+    <section class="panel stepPanel" id="step1">
+      <p class="stepLabel">STEP 1</p>
       <h2>大会・試合情報</h2>
 
       <div class="formGrid">
-        <label>大会名<input id="matchTitle" value="第74回岐阜県高等学校総合体育大会 軟式野球競技"></label>
-        <label>日付<input id="matchDate" value="2026.05.16(土)"></label>
-        <label>会場<input id="matchVenue" value="夜明け前🏟️"></label>
-        <label>試合名<input id="matchRound" value="準決勝 第2試合"></label>
-        <label>先攻チーム<input id="awayTeam" value="県岐商"></label>
-        <label>後攻チーム<input id="homeTeam" value="中京"></label>
-        <label>イニング数<input id="innings" type="number" value="7"></label>
+        <label>大会名
+          <input id="matchTitle" placeholder="例：第74回岐阜県高等学校総合体育大会 軟式野球競技">
+        </label>
+
+        <label>日付
+          <input id="matchDate" type="date">
+        </label>
+
+        <label>会場
+          <input id="matchVenue" placeholder="例：夜明け前🏟️">
+        </label>
+
+        <label>試合名
+          <input id="matchRound" placeholder="例：準決勝 第2試合">
+        </label>
+
+        <label>先攻チーム
+          <input id="awayTeam" placeholder="例：県岐商" oninput="syncTeamNames()">
+        </label>
+
+        <label>後攻チーム
+          <input id="homeTeam" placeholder="例：中京" oninput="syncTeamNames()">
+        </label>
       </div>
 
-      <button class="button" onclick="makeMatchCommand()">試合情報JSONを作る</button>
+      <div class="buttonRow">
+        <button class="button" onclick="makeMatchCommand()">大会・試合情報JSONを作る</button>
+        <button class="button secondary" onclick="nextStep()">次へ進む / スキップ</button>
+      </div>
     </section>
 
-    <section class="panel">
+    <section class="panel stepPanel" id="step2" hidden>
+      <p class="stepLabel">STEP 2</p>
       <h2>スタメン</h2>
 
       <label>チーム
-        <select id="lineupTeam">
-          <option value="away">先攻</option>
-          <option value="home">後攻</option>
-        </select>
+        <select id="lineupTeam"></select>
       </label>
 
-      <label>スタメン・ベンチ入りなど 1行ずつ
-        <textarea id="lineupPlayers" rows="10" placeholder="1. 山田 6&#10;2. 佐藤 4&#10;3. 鈴木 1"></textarea>
-      </label>
+      <div id="lineupRows" class="lineupEditor"></div>
 
-      <button class="button" onclick="makeLineupCommand()">スタメンJSONを作る</button>
+      <div id="pitcherRow" class="pitcherRow" hidden>
+        <h3>P.</h3>
+        <div class="lineupInputRow">
+          <span>P.</span>
+          <input id="pitcherName" placeholder="投手名">
+          <select id="pitcherPosition" disabled>
+            <option value="P">P</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="buttonRow">
+        <button class="button" onclick="makeLineupCommand()">スタメンJSONを作る</button>
+        <button class="button secondary" onclick="nextStep()">次へ進む / スキップ</button>
+      </div>
     </section>
 
-    <section class="panel">
+    <section class="panel stepPanel" id="step3" hidden>
+      <p class="stepLabel">STEP 3</p>
       <h2>速報入力</h2>
 
       <div class="formGrid">
-        <label>回<input id="eventInning" type="number" value="1"></label>
+        <label>回
+          <select id="eventInning"></select>
+        </label>
+
         <label>表/裏
-          <select id="eventHalf">
+          <select id="eventHalf" onchange="syncTeamNames()">
             <option value="top">表</option>
             <option value="bottom">裏</option>
           </select>
         </label>
-        <label>県岐商 得点<input id="awayRuns" type="number" value="0"></label>
-        <label>中京 得点<input id="homeRuns" type="number" value="0"></label>
-        <label>県岐商 安打<input id="awayHits" type="number" value="0"></label>
-        <label>中京 安打<input id="homeHits" type="number" value="0"></label>
-        <label>県岐商 失策<input id="awayErrors" type="number" value="0"></label>
-        <label>中京 失策<input id="homeErrors" type="number" value="0"></label>
+
+        <label><span id="awayRunsLabel">先攻 得点</span>
+          <select id="awayRuns"></select>
+        </label>
+
+        <label><span id="homeRunsLabel">後攻 得点</span>
+          <select id="homeRuns"></select>
+        </label>
+
+        <label><span id="awayHitsLabel">先攻 安打</span>
+          <select id="awayHits"></select>
+        </label>
+
+        <label><span id="homeHitsLabel">後攻 安打</span>
+          <select id="homeHits"></select>
+        </label>
+
+        <label><span id="awayErrorsLabel">先攻 失策</span>
+          <select id="awayErrors"></select>
+        </label>
+
+        <label><span id="homeErrorsLabel">後攻 失策</span>
+          <select id="homeErrors"></select>
+        </label>
       </div>
+
+      <label class="checkLabel">
+        <input id="finalCheck" type="checkbox">
+        試合終了
+      </label>
 
       <label>本文
-        <textarea id="eventText" rows="5" placeholder="1死二塁から中前適時打。中京が先制。"></textarea>
+        <textarea id="eventText" rows="5" placeholder="例：1死二塁から中前適時打。"></textarea>
       </label>
 
-      <button class="button" onclick="makeEventCommand()">速報JSONを作る</button>
-      <button class="button secondary" onclick="makeFinalCommand()">試合終了JSONを作る</button>
-    </section>
-
-    <section class="panel">
-      <h2>得点表を直接修正</h2>
-      <p class="help">合計点が合わないときは、ここで得点表・H・Eを直接上書きできます。</p>
-
-      <label>県岐商 得点表 カンマ区切り
-        <input id="awayRunsByInning" value="0,0,0,0,0,0,0">
-      </label>
-
-      <label>中京 得点表 カンマ区切り
-        <input id="homeRunsByInning" value="0,0,0,0,0,0,0">
-      </label>
-
-      <div class="formGrid">
-        <label>県岐商 H<input id="scoreAwayHits" type="number" value="0"></label>
-        <label>中京 H<input id="scoreHomeHits" type="number" value="0"></label>
-        <label>県岐商 E<input id="scoreAwayErrors" type="number" value="0"></label>
-        <label>中京 E<input id="scoreHomeErrors" type="number" value="0"></label>
-        <label>状態<input id="scoreStatus" value="試合前"></label>
+      <div class="buttonRow">
+        <button class="button" onclick="makeEventCommand()">速報JSONを作る</button>
       </div>
-
-      <button class="button" onclick="makeScoreboardCommand()">得点表修正JSONを作る</button>
     </section>
 
     <section class="panel">
       <h2>コピーしてIssueに貼る</h2>
+      <p class="help">生成したJSONをコピーし、速報入力Issueのコメントに貼り付けます。</p>
 
       <textarea id="output" rows="12" readonly></textarea>
 
       <div class="buttonRow">
         <button class="button" onclick="copyOutput()">コピー</button>
-        <a class="button secondary" href="https://github.com/taisann1181/gifu-softbaseball-live2/issues/1#issuecomment-new" target="_blank">
-          Issueを開く
-        </a>
+        <button class="button secondary" onclick="openCurrentIssue()">現在のIssueを開く</button>
       </div>
     </section>
   </main>
 
   <script>
-    function n(id) {
-      const value = Number(document.getElementById(id).value);
-      return Number.isFinite(value) ? value : 0;
+    const REPO_OWNER = "taisann1181";
+    const REPO_NAME = "gifu-softbaseball-live2";
+
+    let currentStep = 1;
+    let currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues`;
+
+    const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
+
+    function el(id) {
+      return document.getElementById(id);
     }
 
-    function v(id) {
-      return document.getElementById(id).value;
+    function value(id) {
+      return el(id).value;
+    }
+
+    function num(id) {
+      return Number(value(id)) || 0;
+    }
+
+    function optionHtml(value, label = value) {
+      return `<option value="${value}">${label}</option>`;
+    }
+
+    function fillNumberSelect(id, max) {
+      el(id).innerHTML = Array.from({ length: max + 1 }, (_, i) => optionHtml(i)).join("");
+    }
+
+    function fillInningSelect() {
+      el("eventInning").innerHTML = Array.from({ length: 20 }, (_, i) => {
+        const inning = i + 1;
+        return optionHtml(inning, `${inning}回`);
+      }).join("");
+    }
+
+    function fillLineupTeamSelect() {
+      const away = value("awayTeam") || "先攻";
+      const home = value("homeTeam") || "後攻";
+
+      el("lineupTeam").innerHTML = `
+        <option value="away">${away}</option>
+        <option value="home">${home}</option>
+      `;
+    }
+
+    function positionSelectHtml(id) {
+      return `
+        <select id="${id}" onchange="checkDh()">
+          ${positions.map((p) => optionHtml(p, p || "選択")).join("")}
+        </select>
+      `;
+    }
+
+    function buildLineupRows() {
+      const rows = [];
+
+      for (let i = 1; i <= 9; i++) {
+        rows.push(`
+          <div class="lineupInputRow">
+            <span>${i}.</span>
+            <input id="playerName${i}" placeholder="名前">
+            ${positionSelectHtml(`playerPos${i}`)}
+          </div>
+        `);
+      }
+
+      el("lineupRows").innerHTML = rows.join("");
+    }
+
+    function checkDh() {
+      const hasDh = Array.from({ length: 9 }, (_, i) => value(`playerPos${i + 1}`))
+        .some((pos) => pos === "D");
+
+      el("pitcherRow").hidden = !hasDh;
+    }
+
+    function syncTeamNames() {
+      const away = value("awayTeam") || "先攻";
+      const home = value("homeTeam") || "後攻";
+
+      fillLineupTeamSelect();
+
+      el("awayRunsLabel").textContent = `${away} 得点`;
+      el("homeRunsLabel").textContent = `${home} 得点`;
+      el("awayHitsLabel").textContent = `${away} 安打`;
+      el("homeHitsLabel").textContent = `${home} 安打`;
+      el("awayErrorsLabel").textContent = `${away} 失策`;
+      el("homeErrorsLabel").textContent = `${home} 失策`;
+    }
+
+    function nextStep() {
+      el(`step${currentStep}`).hidden = true;
+      currentStep = Math.min(3, currentStep + 1);
+      el(`step${currentStep}`).hidden = false;
+      syncTeamNames();
     }
 
     function wrap(obj) {
-      document.getElementById("output").value =
-        "```livejson\n" + JSON.stringify(obj, null, 2) + "\n```";
+      el("output").value = "```livejson\n" + JSON.stringify(obj, null, 2) + "\n```";
     }
 
     function makeMatchCommand() {
+      syncTeamNames();
+
       wrap({
         type: "match",
-        title: v("matchTitle"),
-        date: v("matchDate"),
-        venue: v("matchVenue"),
-        round: v("matchRound"),
-        awayTeam: v("awayTeam"),
-        homeTeam: v("homeTeam"),
-        innings: n("innings")
+        title: value("matchTitle"),
+        date: value("matchDate"),
+        venue: value("matchVenue"),
+        round: value("matchRound"),
+        awayTeam: value("awayTeam"),
+        homeTeam: value("homeTeam")
       });
     }
 
     function makeLineupCommand() {
-      const players = v("lineupPlayers")
-        .split("\n")
-        .map((x) => x.trim())
-        .filter(Boolean);
+      const players = [];
+
+      for (let i = 1; i <= 9; i++) {
+        const name = value(`playerName${i}`).trim();
+        const position = value(`playerPos${i}`);
+
+        if (name || position) {
+          players.push({
+            order: String(i),
+            name,
+            position
+          });
+        }
+      }
+
+      if (!el("pitcherRow").hidden) {
+        const pitcherName = value("pitcherName").trim();
+
+        if (pitcherName) {
+          players.push({
+            order: "P",
+            name: pitcherName,
+            position: "P"
+          });
+        }
+      }
 
       wrap({
         type: "lineup",
-        team: v("lineupTeam"),
+        team: value("lineupTeam"),
         players
       });
     }
@@ -158,51 +305,74 @@
     function makeEventCommand() {
       wrap({
         type: "event",
-        inning: n("eventInning"),
-        half: v("eventHalf"),
-        awayRuns: n("awayRuns"),
-        homeRuns: n("homeRuns"),
-        awayHits: n("awayHits"),
-        homeHits: n("homeHits"),
-        awayErrors: n("awayErrors"),
-        homeErrors: n("homeErrors"),
-        text: v("eventText")
-      });
-    }
-
-    function makeFinalCommand() {
-      wrap({
-        type: "final",
-        inning: n("eventInning"),
-        half: v("eventHalf"),
-        text: v("eventText") || "試合終了"
-      });
-    }
-
-    function parseArray(id) {
-      return v(id)
-        .split(",")
-        .map((x) => Number(x.trim()) || 0);
-    }
-
-    function makeScoreboardCommand() {
-      wrap({
-        type: "scoreboard",
-        awayRunsByInning: parseArray("awayRunsByInning"),
-        homeRunsByInning: parseArray("homeRunsByInning"),
-        awayHits: n("scoreAwayHits"),
-        homeHits: n("scoreHomeHits"),
-        awayErrors: n("scoreAwayErrors"),
-        homeErrors: n("scoreHomeErrors"),
-        status: v("scoreStatus")
+        inning: num("eventInning"),
+        half: value("eventHalf"),
+        awayRuns: num("awayRuns"),
+        homeRuns: num("homeRuns"),
+        awayHits: num("awayHits"),
+        homeHits: num("homeHits"),
+        awayErrors: num("awayErrors"),
+        homeErrors: num("homeErrors"),
+        final: el("finalCheck").checked,
+        text: value("eventText")
       });
     }
 
     async function copyOutput() {
-      const text = document.getElementById("output").value;
+      const text = el("output").value;
+
+      if (!text.trim()) {
+        alert("先にJSONを作成してください。");
+        return;
+      }
+
       await navigator.clipboard.writeText(text);
-      alert("コピーしました");
+      alert("コピーしました。Issueコメントに貼り付けてください。");
     }
+
+    function openCurrentIssue() {
+      window.open(currentIssueUrl, "_blank", "noreferrer");
+    }
+
+    function openNewGameIssue() {
+      const title = encodeURIComponent("速報入力 新しい試合");
+      const body = encodeURIComponent("edit.htmlで作成したJSONを、このIssueのコメントに貼り付けてください。");
+      const url = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new?title=${title}&body=${body}`;
+
+      window.open(url, "_blank", "noreferrer");
+    }
+
+    async function loadCurrentIssueUrl() {
+      try {
+        const res = await fetch("./data/current.json?ts=" + Date.now(), {
+          cache: "no-store"
+        });
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.issue_url) {
+          currentIssueUrl = data.issue_url + "#issuecomment-new";
+        }
+      } catch {
+        // 読み込めなくても編集自体はできる
+      }
+    }
+
+    function init() {
+      fillInningSelect();
+
+      ["awayRuns", "homeRuns", "awayHits", "homeHits", "awayErrors", "homeErrors"].forEach((id) => {
+        fillNumberSelect(id, 20);
+      });
+
+      buildLineupRows();
+      syncTeamNames();
+      loadCurrentIssueUrl();
+    }
+
+    init();
   </script>
 </body>
 </html>
