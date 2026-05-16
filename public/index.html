@@ -3,20 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>県岐商 vs 中京 速報</title>
+  <title>高校軟式野球 速報</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <header class="topbar">
     <div>
       <p class="eyebrow">高校軟式野球 LIVE</p>
-      <h1>第74回岐阜県高等学校総合体育大会 軟式野球競技</h1>
-      <p class="sub">2026.05.16(土) 夜明け前🏟️ / 準決勝 第2試合　県岐商 vs 中京</p>
+      <h1 id="matchTitle">試合速報</h1>
+      <p id="matchSub" class="sub">読み込み中...</p>
     </div>
-    <div class="liveBadge">
-      <span class="dot"></span>
-      LIVE
-    </div>
+    <a class="editLink" href="./edit.html">編集ページ</a>
   </header>
 
   <main class="container">
@@ -26,21 +23,29 @@
         <span id="updatedAt">--</span>
       </div>
 
-      <div class="scoreBoard">
-        <div class="teamRow">
-          <div class="teamName">県岐商</div>
-          <div id="awayScore" class="totalScore">-</div>
+      <div id="lineScoreWrap" class="lineScoreWrap"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead">
+        <h2>スタメン</h2>
+      </div>
+
+      <div class="lineupGrid">
+        <div>
+          <h3 id="awayLineupTitle">先攻</h3>
+          <ol id="awayLineup" class="lineupList"></ol>
         </div>
-        <div class="teamRow">
-          <div class="teamName">中京</div>
-          <div id="homeScore" class="totalScore">-</div>
+        <div>
+          <h3 id="homeLineupTitle">後攻</h3>
+          <ol id="homeLineup" class="lineupList"></ol>
         </div>
       </div>
     </section>
 
     <section class="feedHeader">
       <h2>試合経過</h2>
-      <p>GitHub Issueコメントを読み込んで速報風に表示します。</p>
+      <p>Issueコメントから生成した試合データを表示しています。</p>
     </section>
 
     <section id="feed" class="feed"></section>
