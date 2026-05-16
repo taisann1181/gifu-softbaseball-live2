@@ -1,10 +1,6 @@
-const GITHUB_OWNER = "taisann1181";
-const GITHUB_REPO = "gifu-softbaseball-live2";
-const ISSUE_NUMBER = 1;
-
 const AWAY_TEAM = "県岐商";
 const HOME_TEAM = "中京";
-const REFRESH_MS = 30000;
+const REFRESH_MS = 15000;
 
 const $ = (id) => document.getElementById(id);
 
@@ -24,7 +20,10 @@ function normalizeNumberText(text) {
 }
 
 function formatClock(iso) {
+  if (!iso) return "--:--";
+
   const d = new Date(iso);
+
   return new Intl.DateTimeFormat("ja-JP", {
     hour: "2-digit",
     minute: "2-digit"
@@ -32,7 +31,10 @@ function formatClock(iso) {
 }
 
 function formatUpdated(iso) {
+  if (!iso) return "未更新";
+
   const d = new Date(iso);
+
   return new Intl.DateTimeFormat("ja-JP", {
     month: "numeric",
     day: "numeric",
@@ -90,7 +92,10 @@ function extractScore(text) {
   if (m) return { away: Number(m[2]), home: Number(m[1]) };
 
   m = t.match(/(\d{1,2})\s*[-―－ー]\s*(\d{1,2})/);
-  if (m && /得点|先制|追加点|同点|逆転|勝ち越し|試合終了|ゲームセット|終了|スコア/.test(t)) {
+  if (
+    m &&
+    /得点|先制|追加点|同点|逆転|勝ち越し|試合終了|ゲームセット|終了|スコア/.test(t)
+  ) {
     return { away: Number(m[1]), home: Number(m[2]) };
   }
 
@@ -116,22 +121,13 @@ function classifyEvent(text) {
   return { type: "normal", label: "速報" };
 }
 
-async function fetchIssueComments() {
-  const commentsUrl =
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${ISSUE_NUMBER}/comments?per_page=100`;
-
-  const res = await fetch(commentsUrl, {
-    headers: {
-      Accept: "application/vnd.github+json"
-    }
+async function fetchCommentsJson() {
+  const res = await fetch(`./comments.json?ts=${Date.now()}`, {
+    cache: "no-store"
   });
 
   if (!res.ok) {
-    if (res.status === 403) {
-      throw new Error("GitHub APIの制限に当たっています。少し待ってから再読み込みしてください。");
-    }
-
-    throw new Error(`Issueコメントを読み込めません。${res.status}`);
+    throw new Error(`comments.json を読み込めません。${res.status}`);
   }
 
   return res.json();
@@ -201,13 +197,16 @@ function renderEvent(event) {
 }
 
 async function update() {
-  const comments = await fetchIssueComments();
+  const data = await fetchCommentsJson();
+  const comments = data.comments || [];
   const live = buildEvents(comments);
 
   $("awayScore").textContent = live.awayScore ?? "-";
   $("homeScore").textContent = live.homeScore ?? "-";
   $("gameStatus").textContent = live.status;
-  $("updatedAt").textContent = `更新 ${formatUpdated(new Date().toISOString())}`;
+  $("updatedAt").textContent = data.generated_at
+    ? `更新 ${formatUpdated(data.generated_at)}`
+    : "未更新";
 
   if (!live.events.length) {
     $("empty").hidden = false;
