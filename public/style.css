@@ -316,3 +316,70 @@ textarea {
     left: 74px;
   }
 }
+
+.stepLabel {
+  display: inline-flex;
+  margin: 0 0 8px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #e7f0fb;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.lineupEditor {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.lineupInputRow {
+  display: grid;
+  grid-template-columns: 42px 1fr 90px;
+  gap: 8px;
+  align-items: center;
+}
+
+.lineupInputRow span {
+  font-weight: 900;
+  color: var(--primary);
+}
+
+.pitcherRow {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.pitcherRow h3 {
+  margin: 0 0 8px;
+}
+
+.checkLabel {
+  display: inline-flex;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.checkLabel input {
+  width: auto;
+}
+
+.attackTeam {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.pos {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.stepPanel[hidden] {
+  display: none;
+}
