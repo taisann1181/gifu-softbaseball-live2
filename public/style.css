@@ -383,3 +383,15 @@ textarea {
 .stepPanel[hidden] {
   display: none;
 }
+
+.lineupList {
+  list-style: none;
+  padding-left: 0;
+}
+
+.batOrder {
+  display: inline-block;
+  min-width: 1.8em;
+  font-weight: 900;
+  color: var(--primary);
+}
