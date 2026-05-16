@@ -1,5 +1,4 @@
-const AWAY_TEAM = "県岐商";
-const HOME_TEAM = "中京";
+const DATA_URL = "./data/current.json";
 const REFRESH_MS = 15000;
 
 const $ = (id) => document.getElementById(id);
@@ -11,23 +10,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
-
-function normalizeNumberText(text) {
-  return String(text ?? "")
-    .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0))
-    .replace(/[−ー－―]/g, "-");
-}
-
-function formatClock(iso) {
-  if (!iso) return "--:--";
-
-  const d = new Date(iso);
-
-  return new Intl.DateTimeFormat("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(d);
 }
 
 function formatUpdated(iso) {
@@ -43,150 +25,83 @@ function formatUpdated(iso) {
   }).format(d);
 }
 
-function kanjiToNumber(s) {
-  const map = {
-    一: 1,
-    二: 2,
-    三: 3,
-    四: 4,
-    五: 5,
-    六: 6,
-    七: 7,
-    八: 8,
-    九: 9,
-    十: 10
-  };
+function formatClock(iso) {
+  if (!iso) return "--:--";
 
-  if (s === "十") return 10;
+  const d = new Date(iso);
 
-  if (s.includes("十")) {
-    const [a, b] = s.split("十");
-    return (a ? map[a] : 1) * 10 + (b ? map[b] : 0);
-  }
-
-  return map[s] || s;
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(d);
 }
 
-function extractInning(text) {
-  const t = normalizeNumberText(text);
-
-  let m = t.match(/([0-9]+)\s*回\s*(表|裏)/);
-  if (m) return `${m[1]}回${m[2]}`;
-
-  m = t.match(/([一二三四五六七八九十]+)\s*回\s*(表|裏)/);
-  if (m) return `${kanjiToNumber(m[1])}回${m[2]}`;
-
-  if (/試合開始|プレイボール/.test(t)) return "試合開始";
-  if (/試合終了|ゲームセット|終了/.test(t)) return "試合終了";
-
-  return null;
-}
-
-function extractScore(text) {
-  const t = normalizeNumberText(text);
-
-  let m = t.match(new RegExp(`${AWAY_TEAM}\\s*(\\d{1,2})\\s*[-―－ー]\\s*(\\d{1,2})\\s*${HOME_TEAM}`));
-  if (m) return { away: Number(m[1]), home: Number(m[2]) };
-
-  m = t.match(new RegExp(`${HOME_TEAM}\\s*(\\d{1,2})\\s*[-―－ー]\\s*(\\d{1,2})\\s*${AWAY_TEAM}`));
-  if (m) return { away: Number(m[2]), home: Number(m[1]) };
-
-  m = t.match(/(\d{1,2})\s*[-―－ー]\s*(\d{1,2})/);
-  if (
-    m &&
-    /得点|先制|追加点|同点|逆転|勝ち越し|試合終了|ゲームセット|終了|スコア/.test(t)
-  ) {
-    return { away: Number(m[1]), home: Number(m[2]) };
-  }
-
-  return null;
-}
-
-function classifyEvent(text) {
-  const rules = [
-    ["final", /試合終了|ゲームセット|終了/, "試合終了"],
-    ["score", /得点|先制|追加点|同点|逆転|勝ち越し|本塁打|ホームラン|スクイズ|タイムリー/, "得点"],
-    ["hit", /安打|ヒット|二塁打|三塁打|ツーベース|スリーベース|内野安打/, "安打"],
-    ["change", /チェンジ|攻守交代/, "チェンジ"],
-    ["change", /投手交代|守備交代|代打|代走|選手交代/, "交代"],
-    ["out", /三振|凡退|フライ|ゴロ|アウト|併殺|見逃し|空振り/, "アウト"],
-    ["runner", /四球|死球|盗塁|犠打|送りバント|満塁|出塁|進塁|一塁|二塁|三塁/, "走者"],
-    ["error", /失策|エラー|暴投|捕逸|悪送球/, "ミス"]
-  ];
-
-  for (const [type, regex, label] of rules) {
-    if (regex.test(text)) return { type, label };
-  }
-
-  return { type: "normal", label: "速報" };
-}
-
-async function fetchCommentsJson() {
-  const res = await fetch(`./comments.json?ts=${Date.now()}`, {
+async function fetchGameData() {
+  const res = await fetch(`${DATA_URL}?ts=${Date.now()}`, {
     cache: "no-store"
   });
 
   if (!res.ok) {
-    throw new Error(`comments.json を読み込めません。${res.status}`);
+    throw new Error(`試合データを読み込めません。${res.status}`);
   }
 
   return res.json();
 }
 
-function buildEvents(comments) {
-  let awayScore = null;
-  let homeScore = null;
-  let status = "試合前";
+function renderLineScore(data) {
+  const innings = data.lineScore.innings || [];
+  const away = data.lineScore.away;
+  const home = data.lineScore.home;
 
-  const events = comments.map((comment, index) => {
-    const text = String(comment.body || "").trim();
-    const inning = extractInning(text);
-    const score = extractScore(text);
-    const tag = classifyEvent(text);
+  const head = `
+    <tr>
+      <th class="teamCell">Team</th>
+      ${innings.map((i) => `<th>${i}</th>`).join("")}
+      <th>R</th>
+      <th>H</th>
+      <th>E</th>
+    </tr>
+  `;
 
-    if (inning) status = inning;
+  const row = (team) => `
+    <tr>
+      <td class="teamCell">${escapeHtml(team.team)}</td>
+      ${innings.map((_, i) => `<td>${escapeHtml(team.runsByInning[i] ?? 0)}</td>`).join("")}
+      <td class="total">${escapeHtml(team.runs)}</td>
+      <td>${escapeHtml(team.hits)}</td>
+      <td>${escapeHtml(team.errors)}</td>
+    </tr>
+  `;
 
-    if (score) {
-      awayScore = score.away;
-      homeScore = score.home;
-    }
+  return `
+    <table class="lineScore">
+      <thead>${head}</thead>
+      <tbody>
+        ${row(away)}
+        ${row(home)}
+      </tbody>
+    </table>
+  `;
+}
 
-    return {
-      id: comment.id,
-      number: index + 1,
-      text,
-      created_at: comment.created_at,
-      html_url: comment.html_url,
-      inning: inning || status,
-      tag,
-      awayScore,
-      homeScore
-    };
-  });
+function renderLineup(list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return `<li class="muted">未入力</li>`;
+  }
 
-  return {
-    events,
-    awayScore,
-    homeScore,
-    status
-  };
+  return list.map((player) => `<li>${escapeHtml(player)}</li>`).join("");
 }
 
 function renderEvent(event) {
   return `
     <article class="event">
       <div class="eventTime">
-        <div class="inning">${escapeHtml(event.inning)}</div>
+        <div class="inning">${escapeHtml(event.inningLabel || "速報")}</div>
         <div class="clock">${escapeHtml(formatClock(event.created_at))}</div>
       </div>
 
       <div class="eventBody">
-        <div class="eventTop">
-          <span class="tag ${escapeHtml(event.tag.type)}">${escapeHtml(event.tag.label)}</span>
-          <span class="replyOrder">#${event.number}</span>
-        </div>
-
-        <div class="eventText">${escapeHtml(event.text)}</div>
+        <div class="eventText">${escapeHtml(event.text || "")}</div>
 
         <a class="eventLink" href="${escapeHtml(event.html_url)}" target="_blank" rel="noreferrer">
           入力元を見る
@@ -197,30 +112,44 @@ function renderEvent(event) {
 }
 
 async function update() {
-  const data = await fetchCommentsJson();
-  const comments = data.comments || [];
-  const live = buildEvents(comments);
+  const data = await fetchGameData();
+  const match = data.match || {};
 
-  $("awayScore").textContent = live.awayScore ?? "-";
-  $("homeScore").textContent = live.homeScore ?? "-";
-  $("gameStatus").textContent = live.status;
+  $("matchTitle").textContent = match.title || "試合速報";
+  $("matchSub").textContent = [
+    match.date,
+    match.venue,
+    match.round,
+    `${match.awayTeam || "先攻"} vs ${match.homeTeam || "後攻"}`
+  ].filter(Boolean).join(" / ");
+
+  $("gameStatus").textContent = data.status || "試合前";
   $("updatedAt").textContent = data.generated_at
     ? `更新 ${formatUpdated(data.generated_at)}`
     : "未更新";
 
-  if (!live.events.length) {
+  $("lineScoreWrap").innerHTML = renderLineScore(data);
+
+  $("awayLineupTitle").textContent = match.awayTeam || "先攻";
+  $("homeLineupTitle").textContent = match.homeTeam || "後攻";
+
+  $("awayLineup").innerHTML = renderLineup(data.lineups?.away || []);
+  $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
+
+  const events = data.events || [];
+
+  if (events.length === 0) {
     $("empty").hidden = false;
     $("feed").innerHTML = "";
     return;
   }
 
   $("empty").hidden = true;
-  $("feed").innerHTML = live.events.map(renderEvent).join("");
+  $("feed").innerHTML = events.map(renderEvent).join("");
 }
 
 update().catch((err) => {
   console.error(err);
-
   $("gameStatus").textContent = "読み込みエラー";
   $("empty").hidden = false;
   $("empty").textContent = err.message;
