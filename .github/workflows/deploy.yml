@@ -1,13 +1,19 @@
-name: Deploy Baseball Live Page
+name: Sync Issue Comments and Deploy
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+  issue_comment:
+    types:
+      - created
+      - edited
+      - deleted
 
 permissions:
   contents: read
+  issues: read
   pages: write
   id-token: write
 
@@ -16,16 +22,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  sync-and-deploy:
+    if: ${{ github.event_name != 'issue_comment' || github.event.issue.number == 1 }}
     runs-on: ubuntu-latest
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
+    env:
+      ISSUE_NUMBER: 1
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Build comments.json
+        run: node scripts/build-comments.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
