@@ -19,17 +19,17 @@
     "innings": [1, 2, 3, 4, 5, 6, 7, 8, 9],
     "away": {
       "team": "先攻",
-      "runsByInning": [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      "runs": 0,
-      "hits": 0,
-      "errors": 0
+      "runsByInning": ["", "", "", "", "", "", "", "", ""],
+      "runs": "",
+      "hits": "",
+      "errors": ""
     },
     "home": {
       "team": "後攻",
-      "runsByInning": [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      "runs": 0,
-      "hits": 0,
-      "errors": 0
+      "runsByInning": ["", "", "", "", "", "", "", "", ""],
+      "runs": "",
+      "hits": "",
+      "errors": ""
     }
   },
   "lineups": {
