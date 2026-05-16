@@ -2,19 +2,21 @@ import fs from "node:fs/promises";
 
 const token = process.env.GITHUB_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
-const currentIssueNumber = Number(process.env.ISSUE_NUMBER || 1);
+const targetIssueNumber = Number(process.env.TARGET_ISSUE_NUMBER || 0);
 
 if (!token) throw new Error("GITHUB_TOKEN がありません。");
 if (!repository) throw new Error("GITHUB_REPOSITORY がありません。");
 
-const DEFAULT_MATCH = {
-  title: "第74回岐阜県高等学校総合体育大会 軟式野球競技",
-  date: "2026.05.16(土)",
-  venue: "夜明け前🏟️",
-  round: "準決勝 第2試合",
-  awayTeam: "県岐商",
-  homeTeam: "中京",
-  innings: 7
+const BASE_INNINGS = 9;
+
+const BLANK_MATCH = {
+  title: "",
+  date: "",
+  venue: "",
+  round: "",
+  awayTeam: "",
+  homeTeam: "",
+  innings: BASE_INNINGS
 };
 
 async function githubFetch(url) {
@@ -33,6 +35,26 @@ async function githubFetch(url) {
   }
 
   return res.json();
+}
+
+async function fetchGameIssues() {
+  const all = [];
+  let page = 1;
+
+  while (true) {
+    const issues = await githubFetch(
+      `https://api.github.com/repos/${repository}/issues?state=all&per_page=100&page=${page}&sort=created&direction=asc`
+    );
+
+    all.push(...issues);
+
+    if (issues.length < 100) break;
+    page += 1;
+  }
+
+  return all
+    .filter((issue) => !issue.pull_request)
+    .filter((issue) => String(issue.title || "").startsWith("速報入力"));
 }
 
 async function fetchIssue(issueNumber) {
@@ -73,8 +95,26 @@ function parseCommand(text) {
   }
 }
 
-function makeArray(length, value = 0) {
-  return Array.from({ length }, () => value);
+function emptyLineScore(length = BASE_INNINGS) {
+  return Array.from({ length }, () => 0);
+}
+
+function ensureInning(arr, inning) {
+  while (arr.length < inning) {
+    arr.push(0);
+  }
+}
+
+function numeric(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function sumRuns(arr) {
+  return arr.reduce((total, value) => {
+    if (value === "×") return total;
+    return total + numeric(value);
+  }, 0);
 }
 
 function normalizeHalf(half) {
@@ -91,27 +131,47 @@ function inningLabel(inning, half) {
   return `${inning}回`;
 }
 
-function numberValue(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+function attackTeam(match, half) {
+  const h = normalizeHalf(half);
+  if (h === "top") return match.awayTeam || "先攻";
+  if (h === "bottom") return match.homeTeam || "後攻";
+  return "";
 }
 
-function normalizeRunsArray(value, innings) {
-  const arr = Array.isArray(value) ? value : [];
-  return makeArray(innings).map((_, i) => numberValue(arr[i]));
+function cleanMatchCommand(command) {
+  return {
+    title: String(command.title || ""),
+    date: String(command.date || ""),
+    venue: String(command.venue || ""),
+    round: String(command.round || ""),
+    awayTeam: String(command.awayTeam || ""),
+    homeTeam: String(command.homeTeam || ""),
+    innings: BASE_INNINGS
+  };
+}
+
+function cleanLineupPlayers(players) {
+  if (!Array.isArray(players)) return [];
+
+  return players
+    .map((player) => ({
+      order: String(player.order || ""),
+      name: String(player.name || "").trim(),
+      position: String(player.position || "").trim()
+    }))
+    .filter((player) => player.name || player.position);
 }
 
 function processGame(issue, comments) {
-  let match = { ...DEFAULT_MATCH };
-  let lineups = {
+  let match = { ...BLANK_MATCH };
+
+  const lineups = {
     away: [],
     home: []
   };
 
-  let innings = Number(match.innings || 7);
-
-  let awayRunsByInning = makeArray(innings);
-  let homeRunsByInning = makeArray(innings);
+  const awayRunsByInning = emptyLineScore();
+  const homeRunsByInning = emptyLineScore();
 
   let awayHits = 0;
   let homeHits = 0;
@@ -148,85 +208,78 @@ function processGame(issue, comments) {
     if (command.type === "match") {
       match = {
         ...match,
-        ...command
+        ...cleanMatchCommand(command)
       };
-
-      innings = Number(match.innings || innings || 7);
-
-      awayRunsByInning = normalizeRunsArray(awayRunsByInning, innings);
-      homeRunsByInning = normalizeRunsArray(homeRunsByInning, innings);
       continue;
     }
 
     if (command.type === "lineup") {
       const team = command.team === "home" ? "home" : "away";
-      lineups[team] = Array.isArray(command.players)
-        ? command.players.map((p) => String(p).trim()).filter(Boolean)
-        : [];
+      lineups[team] = cleanLineupPlayers(command.players);
       continue;
     }
 
-    if (command.type === "scoreboard") {
-      awayRunsByInning = normalizeRunsArray(command.awayRunsByInning, innings);
-      homeRunsByInning = normalizeRunsArray(command.homeRunsByInning, innings);
-
-      awayHits = numberValue(command.awayHits);
-      homeHits = numberValue(command.homeHits);
-      awayErrors = numberValue(command.awayErrors);
-      homeErrors = numberValue(command.homeErrors);
-
-      if (command.status) status = String(command.status);
-      continue;
-    }
-
-    if (command.type === "event" || command.type === "final") {
-      const inning = Number(command.inning || 0);
+    if (command.type === "event") {
+      const inning = numeric(command.inning);
       const half = normalizeHalf(command.half);
 
-      const awayRuns = numberValue(command.awayRuns);
-      const homeRuns = numberValue(command.homeRuns);
-
-      if (inning >= 1 && inning <= innings) {
-        awayRunsByInning[inning - 1] += awayRuns;
-        homeRunsByInning[inning - 1] += homeRuns;
+      if (inning >= 1) {
+        ensureInning(awayRunsByInning, inning);
+        ensureInning(homeRunsByInning, inning);
       }
 
-      awayHits += numberValue(command.awayHits);
-      homeHits += numberValue(command.homeHits);
-      awayErrors += numberValue(command.awayErrors);
-      homeErrors += numberValue(command.homeErrors);
+      const awayRuns = numeric(command.awayRuns);
+      const homeRuns = numeric(command.homeRuns);
 
-      if (command.type === "final" || command.final === true) {
-        status = "試合終了";
+      if (inning >= 1) {
+        awayRunsByInning[inning - 1] = numeric(awayRunsByInning[inning - 1]) + awayRuns;
+        homeRunsByInning[inning - 1] = numeric(homeRunsByInning[inning - 1]) + homeRuns;
+      }
+
+      awayHits += numeric(command.awayHits);
+      homeHits += numeric(command.homeHits);
+      awayErrors += numeric(command.awayErrors);
+      homeErrors += numeric(command.homeErrors);
+
+      const finalChecked = command.final === true;
+
+      if (finalChecked) {
         isFinal = true;
-      } else if (command.status) {
-        status = String(command.status);
-      } else if (inning) {
+        status = "試合終了";
+
+        if (half === "top" && inning >= 1) {
+          ensureInning(homeRunsByInning, inning);
+          homeRunsByInning[inning - 1] = "×";
+        }
+      } else if (inning >= 1) {
         status = inningLabel(inning, half);
       }
 
       events.push({
         number: events.length + 1,
-        type: command.type,
         inning,
         half,
-        inningLabel: command.type === "final" ? "試合終了" : inningLabel(inning, half),
+        inningLabel: finalChecked ? "試合終了" : inningLabel(inning, half),
+        attackTeam: finalChecked ? "" : attackTeam(match, half),
         text: String(command.text || "").trim(),
         created_at: source.created_at,
         updated_at: source.updated_at,
         html_url: source.html_url,
         awayRuns,
         homeRuns,
-        awayHits: numberValue(command.awayHits),
-        homeHits: numberValue(command.homeHits),
-        awayErrors: numberValue(command.awayErrors),
-        homeErrors: numberValue(command.homeErrors)
+        awayHits: numeric(command.awayHits),
+        homeHits: numeric(command.homeHits),
+        awayErrors: numeric(command.awayErrors),
+        homeErrors: numeric(command.homeErrors),
+        final: finalChecked
       });
     }
   }
 
-  const awayRuns = awayRunsByInning.reduce((a, b) => a + b, 0);
-  const homeRuns = homeRunsByInning.reduce((a, b) => a + b, 0);
+  const maxLength = Math.max(BASE_INNINGS, awayRunsByInning.length, homeRunsByInning.length);
+
+  ensureInning(awayRunsByInning, maxLength);
+  ensureInning(homeRunsByInning, maxLength);
 
   return {
     generated_at: new Date().toISOString(),
@@ -238,18 +291,18 @@ function processGame(issue, comments) {
     status,
     isFinal,
     lineScore: {
-      innings: makeArray(innings).map((_, i) => i + 1),
+      innings: Array.from({ length: maxLength }, (_, i) => i + 1),
       away: {
-        team: match.awayTeam,
+        team: match.awayTeam || "先攻",
         runsByInning: awayRunsByInning,
-        runs: awayRuns,
+        runs: sumRuns(awayRunsByInning),
         hits: awayHits,
         errors: awayErrors
       },
       home: {
-        team: match.homeTeam,
+        team: match.homeTeam || "後攻",
         runsByInning: homeRunsByInning,
-        runs: homeRuns,
+        runs: sumRuns(homeRunsByInning),
         hits: homeHits,
         errors: homeErrors
       }
@@ -259,47 +312,119 @@ function processGame(issue, comments) {
   };
 }
 
+function blankGame() {
+  return {
+    generated_at: new Date().toISOString(),
+    repository,
+    issue_number: null,
+    issue_title: "",
+    issue_url: "",
+    match: { ...BLANK_MATCH },
+    status: "試合前",
+    isFinal: false,
+    lineScore: {
+      innings: Array.from({ length: BASE_INNINGS }, (_, i) => i + 1),
+      away: {
+        team: "先攻",
+        runsByInning: emptyLineScore(),
+        runs: 0,
+        hits: 0,
+        errors: 0
+      },
+      home: {
+        team: "後攻",
+        runsByInning: emptyLineScore(),
+        runs: 0,
+        hits: 0,
+        errors: 0
+      }
+    },
+    lineups: {
+      away: [],
+      home: []
+    },
+    events: []
+  };
+}
+
 async function main() {
   await fs.mkdir("public/data", { recursive: true });
 
-  const currentIssue = await fetchIssue(currentIssueNumber);
-  const currentComments = await fetchComments(currentIssueNumber);
-  const currentGame = processGame(currentIssue, currentComments);
+  const gameIssues = await fetchGameIssues();
+
+  if (gameIssues.length === 0) {
+    const empty = blankGame();
+
+    await fs.writeFile("public/data/current.json", JSON.stringify(empty, null, 2), "utf8");
+    await fs.writeFile(
+      "public/data/games.json",
+      JSON.stringify(
+        {
+          generated_at: new Date().toISOString(),
+          repository,
+          current_issue_number: null,
+          games: []
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    console.log("No game issues found. Generated blank data.");
+    return;
+  }
+
+  const games = [];
+
+  for (const issue of gameIssues) {
+    const fullIssue = await fetchIssue(issue.number);
+    const comments = await fetchComments(issue.number);
+    const game = processGame(fullIssue, comments);
+
+    games.push(game);
+
+    await fs.writeFile(
+      `public/data/game-${issue.number}.json`,
+      JSON.stringify(game, null, 2),
+      "utf8"
+    );
+  }
+
+  const current =
+    games.find((game) => game.issue_number === targetIssueNumber) ||
+    games[games.length - 1];
 
   await fs.writeFile(
     "public/data/current.json",
-    JSON.stringify(currentGame, null, 2),
+    JSON.stringify(current, null, 2),
     "utf8"
   );
-
-  await fs.writeFile(
-    `public/data/game-${currentIssueNumber}.json`,
-    JSON.stringify(currentGame, null, 2),
-    "utf8"
-  );
-
-  const gamesIndex = {
-    generated_at: new Date().toISOString(),
-    repository,
-    current_issue_number: currentIssueNumber,
-    games: [
-      {
-        issue_number: currentIssueNumber,
-        title: currentGame.issue_title,
-        match: currentGame.match,
-        status: currentGame.status,
-        url: `./game-${currentIssueNumber}.json`
-      }
-    ]
-  };
 
   await fs.writeFile(
     "public/data/games.json",
-    JSON.stringify(gamesIndex, null, 2),
+    JSON.stringify(
+      {
+        generated_at: new Date().toISOString(),
+        repository,
+        current_issue_number: current.issue_number,
+        games: games.map((game) => ({
+          issue_number: game.issue_number,
+          issue_title: game.issue_title,
+          issue_url: game.issue_url,
+          match: game.match,
+          status: game.status,
+          isFinal: game.isFinal,
+          data_url: `./game-${game.issue_number}.json`
+        }))
+      },
+      null,
+      2
+    ),
     "utf8"
   );
 
-  console.log(`Generated game data for issue #${currentIssueNumber}`);
+  console.log(`Generated ${games.length} game file(s). Current issue: #${current.issue_number}`);
 }
 
 main().catch((err) => {
