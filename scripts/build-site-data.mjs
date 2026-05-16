@@ -96,12 +96,12 @@ function parseCommand(text) {
 }
 
 function emptyLineScore(length = BASE_INNINGS) {
-  return Array.from({ length }, () => 0);
+  return Array.from({ length }, () => "");
 }
 
 function ensureInning(arr, inning) {
   while (arr.length < inning) {
-    arr.push(0);
+    arr.push("");
   }
 }
 
@@ -110,11 +110,26 @@ function numeric(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function sumRuns(arr) {
+function cellNumber(value) {
+  if (value === "" || value === null || value === undefined || value === "×") return 0;
+  return numeric(value);
+}
+
+function addToCell(arr, inning, value) {
+  ensureInning(arr, inning);
+  arr[inning - 1] = cellNumber(arr[inning - 1]) + numeric(value);
+}
+
+function sumRuns(arr, touched) {
+  if (!touched) return "";
   return arr.reduce((total, value) => {
     if (value === "×") return total;
-    return total + numeric(value);
+    return total + cellNumber(value);
   }, 0);
+}
+
+function displayTotal(value, touched) {
+  return touched ? value : "";
 }
 
 function normalizeHalf(half) {
@@ -178,6 +193,13 @@ function processGame(issue, comments) {
   let awayErrors = 0;
   let homeErrors = 0;
 
+  let awayRunsTouched = false;
+  let homeRunsTouched = false;
+  let awayHitsTouched = false;
+  let homeHitsTouched = false;
+  let awayErrorsTouched = false;
+  let homeErrorsTouched = false;
+
   let status = "試合前";
   let isFinal = false;
 
@@ -222,26 +244,49 @@ function processGame(issue, comments) {
     if (command.type === "event") {
       const inning = numeric(command.inning);
       const half = normalizeHalf(command.half);
+      const finalChecked = command.final === true;
 
       if (inning >= 1) {
         ensureInning(awayRunsByInning, inning);
         ensureInning(homeRunsByInning, inning);
       }
 
-      const awayRuns = numeric(command.awayRuns);
-      const homeRuns = numeric(command.homeRuns);
+      let appliedAwayRuns = 0;
+      let appliedHomeRuns = 0;
+      let appliedAwayHits = 0;
+      let appliedHomeHits = 0;
+      let appliedAwayErrors = 0;
+      let appliedHomeErrors = 0;
 
-      if (inning >= 1) {
-        awayRunsByInning[inning - 1] = numeric(awayRunsByInning[inning - 1]) + awayRuns;
-        homeRunsByInning[inning - 1] = numeric(homeRunsByInning[inning - 1]) + homeRuns;
+      if (inning >= 1 && half === "top") {
+        appliedAwayRuns = numeric(command.awayRuns);
+        appliedAwayHits = numeric(command.awayHits);
+        appliedHomeErrors = numeric(command.homeErrors);
+
+        addToCell(awayRunsByInning, inning, appliedAwayRuns);
+        awayRunsTouched = true;
+
+        awayHits += appliedAwayHits;
+        awayHitsTouched = true;
+
+        homeErrors += appliedHomeErrors;
+        homeErrorsTouched = true;
       }
 
-      awayHits += numeric(command.awayHits);
-      homeHits += numeric(command.homeHits);
-      awayErrors += numeric(command.awayErrors);
-      homeErrors += numeric(command.homeErrors);
+      if (inning >= 1 && half === "bottom") {
+        appliedHomeRuns = numeric(command.homeRuns);
+        appliedHomeHits = numeric(command.homeHits);
+        appliedAwayErrors = numeric(command.awayErrors);
 
-      const finalChecked = command.final === true;
+        addToCell(homeRunsByInning, inning, appliedHomeRuns);
+        homeRunsTouched = true;
+
+        homeHits += appliedHomeHits;
+        homeHitsTouched = true;
+
+        awayErrors += appliedAwayErrors;
+        awayErrorsTouched = true;
+      }
 
       if (finalChecked) {
         isFinal = true;
@@ -265,12 +310,12 @@ function processGame(issue, comments) {
         created_at: source.created_at,
         updated_at: source.updated_at,
         html_url: source.html_url,
-        awayRuns,
-        homeRuns,
-        awayHits: numeric(command.awayHits),
-        homeHits: numeric(command.homeHits),
-        awayErrors: numeric(command.awayErrors),
-        homeErrors: numeric(command.homeErrors),
+        awayRuns: appliedAwayRuns,
+        homeRuns: appliedHomeRuns,
+        awayHits: appliedAwayHits,
+        homeHits: appliedHomeHits,
+        awayErrors: appliedAwayErrors,
+        homeErrors: appliedHomeErrors,
         final: finalChecked
       });
     }
@@ -280,6 +325,9 @@ function processGame(issue, comments) {
 
   ensureInning(awayRunsByInning, maxLength);
   ensureInning(homeRunsByInning, maxLength);
+
+  const awayRuns = sumRuns(awayRunsByInning, awayRunsTouched);
+  const homeRuns = sumRuns(homeRunsByInning, homeRunsTouched);
 
   return {
     generated_at: new Date().toISOString(),
@@ -295,16 +343,16 @@ function processGame(issue, comments) {
       away: {
         team: match.awayTeam || "先攻",
         runsByInning: awayRunsByInning,
-        runs: sumRuns(awayRunsByInning),
-        hits: awayHits,
-        errors: awayErrors
+        runs: awayRuns,
+        hits: displayTotal(awayHits, awayHitsTouched),
+        errors: displayTotal(awayErrors, awayErrorsTouched)
       },
       home: {
         team: match.homeTeam || "後攻",
         runsByInning: homeRunsByInning,
-        runs: sumRuns(homeRunsByInning),
-        hits: homeHits,
-        errors: homeErrors
+        runs: homeRuns,
+        hits: displayTotal(homeHits, homeHitsTouched),
+        errors: displayTotal(homeErrors, homeErrorsTouched)
       }
     },
     lineups,
@@ -327,16 +375,16 @@ function blankGame() {
       away: {
         team: "先攻",
         runsByInning: emptyLineScore(),
-        runs: 0,
-        hits: 0,
-        errors: 0
+        runs: "",
+        hits: "",
+        errors: ""
       },
       home: {
         team: "後攻",
         runsByInning: emptyLineScore(),
-        runs: 0,
-        hits: 0,
-        errors: 0
+        runs: "",
+        hits: "",
+        errors: ""
       }
     },
     lineups: {
