@@ -36,6 +36,11 @@ function formatClock(iso) {
   }).format(d);
 }
 
+function renderCell(value) {
+  if (value === "" || value === null || value === undefined) return "";
+  return escapeHtml(value);
+}
+
 async function fetchGameData() {
   const res = await fetch(`${DATA_URL}?ts=${Date.now()}`, {
     cache: "no-store"
@@ -49,14 +54,14 @@ async function fetchGameData() {
 }
 
 function renderLineScore(data) {
-  const innings = data.lineScore.innings || [];
-  const away = data.lineScore.away;
-  const home = data.lineScore.home;
+  const innings = data.lineScore?.innings || [];
+  const away = data.lineScore?.away || {};
+  const home = data.lineScore?.home || {};
 
   const head = `
     <tr>
       <th class="teamCell">Team</th>
-      ${innings.map((i) => `<th>${i}</th>`).join("")}
+      ${innings.map((i) => `<th>${escapeHtml(i)}</th>`).join("")}
       <th>R</th>
       <th>H</th>
       <th>E</th>
@@ -65,11 +70,11 @@ function renderLineScore(data) {
 
   const row = (team) => `
     <tr>
-      <td class="teamCell">${escapeHtml(team.team)}</td>
-      ${innings.map((_, i) => `<td>${escapeHtml(team.runsByInning[i] ?? 0)}</td>`).join("")}
-      <td class="total">${escapeHtml(team.runs)}</td>
-      <td>${escapeHtml(team.hits)}</td>
-      <td>${escapeHtml(team.errors)}</td>
+      <td class="teamCell">${escapeHtml(team.team || "")}</td>
+      ${innings.map((_, i) => `<td>${renderCell(team.runsByInning?.[i])}</td>`).join("")}
+      <td class="total">${renderCell(team.runs)}</td>
+      <td>${renderCell(team.hits)}</td>
+      <td>${renderCell(team.errors)}</td>
     </tr>
   `;
 
@@ -84,21 +89,46 @@ function renderLineScore(data) {
   `;
 }
 
+function normalizePosition(position) {
+  const map = {
+    投: "投",
+    捕: "捕",
+    一: "一",
+    二: "二",
+    三: "三",
+    遊: "遊",
+    左: "左",
+    中: "中",
+    右: "右",
+    D: "D",
+    P: "P",
+    DH: "D"
+  };
+
+  return map[position] || position || "";
+}
+
 function renderLineup(list) {
   if (!Array.isArray(list) || list.length === 0) {
-    return `<li class="muted">未入力</li>`;
+    return `<li class="muted" style="list-style:none;">未入力</li>`;
   }
 
   return list.map((player) => {
     if (typeof player === "string") {
-      return `<li>${escapeHtml(player)}</li>`;
+      return `<li style="list-style:none;">${escapeHtml(player)}</li>`;
     }
 
-    const order = player.order ? `${escapeHtml(player.order)}. ` : "";
-    const name = escapeHtml(player.name || "");
-    const pos = player.position ? ` <span class="pos">(${escapeHtml(player.position)})</span>` : "";
+    const order = player.order
+      ? `<span class="batOrder" style="display:inline-block;min-width:2.2em;font-weight:900;color:var(--primary);">${escapeHtml(player.order)}.</span>`
+      : "";
 
-    return `<li>${order}${name}${pos}</li>`;
+    const name = escapeHtml(player.name || "");
+    const posText = normalizePosition(player.position);
+    const pos = posText
+      ? ` <span class="pos" style="color:var(--muted);font-size:13px;">(${escapeHtml(posText)})</span>`
+      : "";
+
+    return `<li style="list-style:none;">${order}${name}${pos}</li>`;
   }).join("");
 }
 
@@ -114,12 +144,27 @@ function renderEvent(event) {
       <div class="eventBody">
         <div class="eventText">${escapeHtml(event.text || "")}</div>
 
-        <a class="eventLink" href="${escapeHtml(event.html_url)}" target="_blank" rel="noreferrer">
+        <a class="eventLink" href="${escapeHtml(event.html_url || "#")}" target="_blank" rel="noreferrer">
           入力元を見る
         </a>
       </div>
     </article>
   `;
+}
+
+function applyLineupListStyle() {
+  const away = $("awayLineup");
+  const home = $("homeLineup");
+
+  if (away) {
+    away.style.listStyle = "none";
+    away.style.paddingLeft = "0";
+  }
+
+  if (home) {
+    home.style.listStyle = "none";
+    home.style.paddingLeft = "0";
+  }
 }
 
 async function update() {
@@ -149,6 +194,8 @@ async function update() {
   $("awayLineup").innerHTML = renderLineup(data.lineups?.away || []);
   $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
 
+  applyLineupListStyle();
+
   const events = data.events || [];
 
   if (events.length === 0) {
@@ -163,9 +210,15 @@ async function update() {
 
 update().catch((err) => {
   console.error(err);
-  $("gameStatus").textContent = "読み込みエラー";
-  $("empty").hidden = false;
-  $("empty").textContent = err.message;
+
+  if ($("gameStatus")) {
+    $("gameStatus").textContent = "読み込みエラー";
+  }
+
+  if ($("empty")) {
+    $("empty").hidden = false;
+    $("empty").textContent = err.message;
+  }
 });
 
 setInterval(() => {
