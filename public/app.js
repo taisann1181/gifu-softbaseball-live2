@@ -89,7 +89,17 @@ function renderLineup(list) {
     return `<li class="muted">未入力</li>`;
   }
 
-  return list.map((player) => `<li>${escapeHtml(player)}</li>`).join("");
+  return list.map((player) => {
+    if (typeof player === "string") {
+      return `<li>${escapeHtml(player)}</li>`;
+    }
+
+    const order = player.order ? `${escapeHtml(player.order)}. ` : "";
+    const name = escapeHtml(player.name || "");
+    const pos = player.position ? ` <span class="pos">(${escapeHtml(player.position)})</span>` : "";
+
+    return `<li>${order}${name}${pos}</li>`;
+  }).join("");
 }
 
 function renderEvent(event) {
@@ -97,6 +107,7 @@ function renderEvent(event) {
     <article class="event">
       <div class="eventTime">
         <div class="inning">${escapeHtml(event.inningLabel || "速報")}</div>
+        <div class="attackTeam">${escapeHtml(event.attackTeam || "")}</div>
         <div class="clock">${escapeHtml(formatClock(event.created_at))}</div>
       </div>
 
@@ -116,14 +127,16 @@ async function update() {
   const match = data.match || {};
 
   $("matchTitle").textContent = match.title || "試合速報";
+
   $("matchSub").textContent = [
     match.date,
     match.venue,
     match.round,
-    `${match.awayTeam || "先攻"} vs ${match.homeTeam || "後攻"}`
-  ].filter(Boolean).join(" / ");
+    match.awayTeam && match.homeTeam ? `${match.awayTeam} vs ${match.homeTeam}` : ""
+  ].filter(Boolean).join(" / ") || "試合情報未入力";
 
   $("gameStatus").textContent = data.status || "試合前";
+
   $("updatedAt").textContent = data.generated_at
     ? `更新 ${formatUpdated(data.generated_at)}`
     : "未更新";
