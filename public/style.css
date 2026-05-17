@@ -451,3 +451,27 @@ textarea {
     margin-left: 0;
   }
     }
+
+.finalEvent {
+  background: #111827;
+  color: white;
+  border-radius: 18px;
+  padding: 18px 20px;
+  text-align: center;
+  box-shadow: 0 8px 22px rgba(15, 35, 60, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.finalEventTitle {
+  font-size: 22px;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+}
+
+.finalEventText {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.86);
+  white-space: pre-wrap;
+}
