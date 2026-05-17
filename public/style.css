@@ -16,7 +16,12 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   background: var(--bg);
   color: var(--ink);
 }
@@ -173,9 +178,26 @@ h1 {
 }
 
 .lineupList {
+  list-style: none;
   margin: 0;
-  padding-left: 24px;
+  padding-left: 0;
   line-height: 1.8;
+}
+
+.lineupList li {
+  list-style: none;
+}
+
+.batOrder {
+  display: inline-block;
+  min-width: 2.2em;
+  font-weight: 900;
+  color: var(--primary);
+}
+
+.pos {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .muted {
@@ -219,6 +241,13 @@ h1 {
   font-size: 15px;
   font-weight: 1000;
   color: var(--primary);
+}
+
+.attackTeam {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 800;
 }
 
 .clock {
@@ -298,25 +327,6 @@ textarea {
   flex-wrap: wrap;
 }
 
-@media (max-width: 640px) {
-  .topbar {
-    align-items: flex-start;
-  }
-
-  .formGrid,
-  .lineupGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .event {
-    grid-template-columns: 74px 1fr;
-  }
-
-  .event::before {
-    left: 74px;
-  }
-}
-
 .stepLabel {
   display: inline-flex;
   margin: 0 0 8px;
@@ -368,30 +378,76 @@ textarea {
   width: auto;
 }
 
-.attackTeam {
-  margin-top: 3px;
+.stepPanel[hidden],
+[hidden] {
+  display: none !important;
+}
+
+.gameMiniSelector {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 14px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 35, 60, 0.06);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.gameMiniSelector span {
   font-size: 12px;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.pos {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.stepPanel[hidden] {
-  display: none;
-}
-
-.lineupList {
-  list-style: none;
-  padding-left: 0;
-}
-
-.batOrder {
-  display: inline-block;
-  min-width: 1.8em;
   font-weight: 900;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.gameMiniSelector input {
+  width: 58px;
+  min-width: 58px;
+  padding: 5px 6px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.gameMiniSelector button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #eef3f8;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.gameMiniSelector .currentGameLabel {
   color: var(--primary);
 }
+
+@media (max-width: 640px) {
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .formGrid,
+  .lineupGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .event {
+    grid-template-columns: 74px 1fr;
+  }
+
+  .event::before {
+    left: 74px;
+  }
+
+  .gameMiniSelector {
+    margin-left: 0;
+  }
+    }
