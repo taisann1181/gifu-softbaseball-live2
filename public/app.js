@@ -149,25 +149,25 @@ function normalizePosition(position) {
 
 function renderLineup(list) {
   if (!Array.isArray(list) || list.length === 0) {
-    return `<li class="muted" style="list-style:none;">未入力</li>`;
+    return `<li class="muted">未入力</li>`;
   }
 
   return list.map((player) => {
     if (typeof player === "string") {
-      return `<li style="list-style:none;">${escapeHtml(player)}</li>`;
+      return `<li>${escapeHtml(player)}</li>`;
     }
 
     const order = player.order
-      ? `<span class="batOrder" style="display:inline-block;min-width:2.2em;font-weight:900;color:var(--primary);">${escapeHtml(player.order)}.</span>`
+      ? `<span class="batOrder">${escapeHtml(player.order)}.</span>`
       : "";
 
     const name = escapeHtml(player.name || "");
     const posText = normalizePosition(player.position);
     const pos = posText
-      ? ` <span class="pos" style="color:var(--muted);font-size:13px;">(${escapeHtml(posText)})</span>`
+      ? ` <span class="pos">(${escapeHtml(posText)})</span>`
       : "";
 
-    return `<li style="list-style:none;">${order}${name}${pos}</li>`;
+    return `<li>${order}${name}${pos}</li>`;
   }).join("");
 }
 
@@ -189,21 +189,6 @@ function renderEvent(event) {
       </div>
     </article>
   `;
-}
-
-function applyLineupListStyle() {
-  const away = $("awayLineup");
-  const home = $("homeLineup");
-
-  if (away) {
-    away.style.listStyle = "none";
-    away.style.paddingLeft = "0";
-  }
-
-  if (home) {
-    home.style.listStyle = "none";
-    home.style.paddingLeft = "0";
-  }
 }
 
 function updateGameSelector(data) {
@@ -244,7 +229,6 @@ function renderGame(data) {
   $("awayLineup").innerHTML = renderLineup(data.lineups?.away || []);
   $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
 
-  applyLineupListStyle();
   updateGameSelector(data);
 
   const events = data.events || [];
