@@ -172,6 +172,24 @@ function renderLineup(list) {
 }
 
 function renderEvent(event) {
+  const isFinal =
+    event.final === true ||
+    event.inningLabel === "試合終了" ||
+    /試合終了|ゲームセット/.test(event.text || "");
+
+  if (isFinal) {
+    return `
+      <article class="finalEvent">
+        <div class="finalEventTitle">試合終了</div>
+        ${
+          event.text && event.text !== "試合終了"
+            ? `<div class="finalEventText">${escapeHtml(event.text)}</div>`
+            : ""
+        }
+      </article>
+    `;
+  }
+
   return `
     <article class="event">
       <div class="eventTime">
