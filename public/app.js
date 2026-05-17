@@ -181,11 +181,6 @@ function renderEvent(event) {
     return `
       <article class="finalEvent">
         <div class="finalEventTitle">試合終了</div>
-        ${
-          event.text && event.text !== "試合終了"
-            ? `<div class="finalEventText">${escapeHtml(event.text)}</div>`
-            : ""
-        }
       </article>
     `;
   }
@@ -204,6 +199,7 @@ function renderEvent(event) {
     </article>
   `;
 }
+
 
 function updateGameSelector(data) {
   const gameNumber = data.issue_number || activeGameNumber || "";
