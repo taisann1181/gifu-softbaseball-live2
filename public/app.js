@@ -182,10 +182,6 @@ function renderEvent(event) {
 
       <div class="eventBody">
         <div class="eventText">${escapeHtml(event.text || "")}</div>
-
-        <a class="eventLink" href="${escapeHtml(event.html_url || "#")}" target="_blank" rel="noreferrer">
-          入力元を見る
-        </a>
       </div>
     </article>
   `;
