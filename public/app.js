@@ -1,5 +1,8 @@
-const DATA_URL = "./data/current.json";
+const CURRENT_DATA_URL = "./data/current.json";
 const REFRESH_MS = 15000;
+
+let activeDataUrl = CURRENT_DATA_URL;
+let activeIssueNumber = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -41,8 +44,30 @@ function renderCell(value) {
   return escapeHtml(value);
 }
 
-async function fetchGameData() {
-  const res = await fetch(`${DATA_URL}?ts=${Date.now()}`, {
+function getIssueFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const issue = Number(params.get("issue") || params.get("game") || 0);
+  return Number.isFinite(issue) && issue > 0 ? issue : null;
+}
+
+function gameDataUrl(issueNumber) {
+  return `./data/game-${issueNumber}.json`;
+}
+
+function setUrlIssue(issueNumber) {
+  const url = new URL(location.href);
+
+  if (issueNumber) {
+    url.searchParams.set("issue", String(issueNumber));
+  } else {
+    url.searchParams.delete("issue");
+  }
+
+  history.replaceState(null, "", url);
+}
+
+async function fetchGameData(url) {
+  const res = await fetch(`${url}?ts=${Date.now()}`, {
     cache: "no-store"
   });
 
@@ -167,8 +192,19 @@ function applyLineupListStyle() {
   }
 }
 
-async function update() {
-  const data = await fetchGameData();
+function updateIssueDisplay(data) {
+  const issue = data.issue_number || activeIssueNumber || "";
+
+  if ($("viewIssueNumber")) {
+    $("viewIssueNumber").value = issue || "";
+  }
+
+  if ($("currentIssueLabel")) {
+    $("currentIssueLabel").value = issue ? `Issue #${issue}` : "最新の試合";
+  }
+}
+
+function renderGame(data) {
   const match = data.match || {};
 
   $("matchTitle").textContent = match.title || "試合速報";
@@ -195,6 +231,7 @@ async function update() {
   $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
 
   applyLineupListStyle();
+  updateIssueDisplay(data);
 
   const events = data.events || [];
 
@@ -208,18 +245,78 @@ async function update() {
   $("feed").innerHTML = events.map(renderEvent).join("");
 }
 
-update().catch((err) => {
-  console.error(err);
+async function update() {
+  const data = await fetchGameData(activeDataUrl);
+  renderGame(data);
+}
 
-  if ($("gameStatus")) {
-    $("gameStatus").textContent = "読み込みエラー";
+async function loadSelectedGame() {
+  const issueNumber = Number($("viewIssueNumber").value);
+
+  if (!Number.isFinite(issueNumber) || issueNumber <= 0) {
+    alert("Issue番号を入力してください。");
+    return;
   }
 
-  if ($("empty")) {
+  activeIssueNumber = issueNumber;
+  activeDataUrl = gameDataUrl(issueNumber);
+  setUrlIssue(issueNumber);
+
+  try {
+    await update();
+  } catch (err) {
+    console.error(err);
+
+    $("gameStatus").textContent = "読み込みエラー";
+    $("empty").hidden = false;
+    $("empty").textContent = `Issue #${issueNumber} の試合データを読み込めません。Actionsが成功しているか確認してください。`;
+  }
+}
+
+async function loadCurrentGame() {
+  activeIssueNumber = null;
+  activeDataUrl = CURRENT_DATA_URL;
+  setUrlIssue(null);
+
+  try {
+    await update();
+  } catch (err) {
+    console.error(err);
+
+    $("gameStatus").textContent = "読み込みエラー";
     $("empty").hidden = false;
     $("empty").textContent = err.message;
   }
-});
+}
+
+async function init() {
+  const issueFromUrl = getIssueFromUrl();
+
+  if (issueFromUrl) {
+    activeIssueNumber = issueFromUrl;
+    activeDataUrl = gameDataUrl(issueFromUrl);
+  } else {
+    activeIssueNumber = null;
+    activeDataUrl = CURRENT_DATA_URL;
+  }
+
+  try {
+    await update();
+  } catch (err) {
+    console.error(err);
+
+    if ($("gameStatus")) {
+      $("gameStatus").textContent = "読み込みエラー";
+    }
+
+    if ($("empty")) {
+      $("empty").hidden = false;
+      $("empty").textContent = err.message;
+    }
+  }
+}
+
+init();
 
 setInterval(() => {
   update().catch(console.error);
