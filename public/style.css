@@ -467,11 +467,3 @@ textarea {
   font-weight: 1000;
   letter-spacing: 0.08em;
 }
-
-.finalEventText {
-  margin-top: 8px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.86);
-  white-space: pre-wrap;
-}
