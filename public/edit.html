@@ -21,6 +21,25 @@
   </header>
 
   <main class="container">
+    <section class="panel">
+      <h2>入力先Issue</h2>
+      <p class="help">速報JSONを貼り付けるIssue番号を選択します。</p>
+
+      <div class="formGrid">
+        <label>Issue番号
+          <select id="issueNumber" onchange="syncIssueUrl()"></select>
+        </label>
+
+        <label>入力先
+          <input id="issueUrlPreview" readonly>
+        </label>
+      </div>
+
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="openCurrentIssue()">選択したIssueを開く</button>
+      </div>
+    </section>
+
     <section class="panel stepPanel" id="step1">
       <p class="stepLabel">STEP 1</p>
       <h2>大会・試合情報</h2>
@@ -52,8 +71,8 @@
       </div>
 
       <div class="buttonRow">
-        <button class="button" onclick="makeMatchCommand()">大会・試合情報JSONを作る</button>
-        <button class="button secondary" onclick="nextStep()">次へ進む / スキップ</button>
+        <button class="button" type="button" onclick="makeMatchCommand()">大会・試合情報JSONを作る</button>
+        <button class="button secondary" type="button" onclick="nextStep()">次へ進む / スキップ</button>
       </div>
     </section>
 
@@ -80,8 +99,8 @@
       </div>
 
       <div class="buttonRow">
-        <button class="button" onclick="makeLineupCommand()">スタメンJSONを作る</button>
-        <button class="button secondary" onclick="nextStep()">次へ進む / スキップ</button>
+        <button class="button" type="button" onclick="makeLineupCommand()">スタメンJSONを作る</button>
+        <button class="button secondary" type="button" onclick="nextStep()">次へ進む / スキップ</button>
       </div>
     </section>
 
@@ -136,19 +155,19 @@
       </label>
 
       <div class="buttonRow">
-        <button class="button" onclick="makeEventCommand()">速報JSONを作る</button>
+        <button class="button" type="button" onclick="makeEventCommand()">速報JSONを作る</button>
       </div>
     </section>
 
     <section class="panel">
       <h2>コピーしてIssueに貼る</h2>
-      <p class="help">生成したJSONをコピーし、速報入力Issueのコメントに貼り付けます。</p>
+      <p class="help">生成したJSONをコピーし、選択したIssueのコメントに貼り付けます。</p>
 
       <textarea id="output" rows="12" readonly></textarea>
 
       <div class="buttonRow">
-        <button class="button" onclick="copyOutput()">コピー</button>
-        <button class="button secondary" onclick="openCurrentIssue()">現在のIssueを開く</button>
+        <button class="button" type="button" onclick="copyOutput()">コピー</button>
+        <button class="button secondary" type="button" onclick="openCurrentIssue()">選択したIssueを開く</button>
       </div>
     </section>
   </main>
@@ -158,7 +177,8 @@
     const REPO_NAME = "gifu-softbaseball-live2";
 
     let currentStep = 1;
-    let currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues`;
+    let currentIssueNumber = 1;
+    let currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/1#issuecomment-new`;
 
     const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
 
@@ -176,6 +196,28 @@
 
     function optionHtml(value, label = value) {
       return `<option value="${value}">${label}</option>`;
+    }
+
+    function fillIssueSelect(defaultNumber = 1) {
+      const select = el("issueNumber");
+
+      select.innerHTML = Array.from({ length: 100 }, (_, i) => {
+        const n = i + 1;
+        return optionHtml(n, `#${n}`);
+      }).join("");
+
+      select.value = String(defaultNumber);
+      currentIssueNumber = Number(select.value) || 1;
+      syncIssueUrl();
+    }
+
+    function syncIssueUrl() {
+      currentIssueNumber = Number(value("issueNumber")) || 1;
+      currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/${currentIssueNumber}#issuecomment-new`;
+
+      if (el("issueUrlPreview")) {
+        el("issueUrlPreview").value = currentIssueUrl;
+      }
     }
 
     function fillNumberSelect(id, max) {
@@ -201,7 +243,11 @@
         <option value="home">${home}</option>
       `;
 
-      el("lineupTeam").value = current;
+      if (current === "home") {
+        el("lineupTeam").value = "home";
+      } else {
+        el("lineupTeam").value = "away";
+      }
     }
 
     function positionSelectHtml(id) {
@@ -255,15 +301,34 @@
     function syncEventFields() {
       const half = value("eventHalf");
 
-      const topVisible = ["awayRunsBox", "awayHitsBox", "homeErrorsBox"];
-      const bottomVisible = ["homeRunsBox", "homeHitsBox", "awayErrorsBox"];
+      const topOnly = [
+        "awayRunsBox",
+        "awayHitsBox",
+        "homeErrorsBox"
+      ];
+
+      const bottomOnly = [
+        "homeRunsBox",
+        "homeHitsBox",
+        "awayErrorsBox"
+      ];
 
       if (half === "top") {
-        topVisible.forEach((id) => el(id).hidden = false);
-        bottomVisible.forEach((id) => el(id).hidden = true);
+        topOnly.forEach((id) => {
+          el(id).hidden = false;
+        });
+
+        bottomOnly.forEach((id) => {
+          el(id).hidden = true;
+        });
       } else {
-        topVisible.forEach((id) => el(id).hidden = true);
-        bottomVisible.forEach((id) => el(id).hidden = false);
+        topOnly.forEach((id) => {
+          el(id).hidden = true;
+        });
+
+        bottomOnly.forEach((id) => {
+          el(id).hidden = false;
+        });
       }
     }
 
@@ -371,10 +436,11 @@
       }
 
       await navigator.clipboard.writeText(text);
-      alert("コピーしました。Issueコメントに貼り付けてください。");
+      alert(`コピーしました。Issue #${currentIssueNumber} のコメントに貼り付けてください。`);
     }
 
     function openCurrentIssue() {
+      syncIssueUrl();
       window.open(currentIssueUrl, "_blank", "noreferrer");
     }
 
@@ -386,25 +452,29 @@
       window.open(url, "_blank", "noreferrer");
     }
 
-    async function loadCurrentIssueUrl() {
+    async function loadCurrentIssueNumber() {
       try {
         const res = await fetch("./data/current.json?ts=" + Date.now(), {
           cache: "no-store"
         });
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          fillIssueSelect(1);
+          return;
+        }
 
         const data = await res.json();
+        const issueNumber = Number(data.issue_number || 1);
 
-        if (data.issue_url) {
-          currentIssueUrl = data.issue_url + "#issuecomment-new";
-        }
+        fillIssueSelect(issueNumber);
       } catch {
-        // 読み込めなくても編集自体はできる
+        fillIssueSelect(1);
       }
     }
 
     function init() {
+      loadCurrentIssueNumber();
+
       fillInningSelect();
 
       [
@@ -421,10 +491,9 @@
       buildLineupRows();
       syncTeamNames();
       syncEventFields();
-      loadCurrentIssueUrl();
     }
 
     init();
   </script>
 </body>
-</html>
+  </html>
