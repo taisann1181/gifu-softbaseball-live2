@@ -1,8 +1,9 @@
 const CURRENT_DATA_URL = "./data/current.json";
 const REFRESH_MS = 15000;
+const STORAGE_KEY = "gifu_softbaseball_selected_game_number";
 
 let activeDataUrl = CURRENT_DATA_URL;
-let activeIssueNumber = null;
+let activeGameNumber = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -44,23 +45,36 @@ function renderCell(value) {
   return escapeHtml(value);
 }
 
-function getIssueFromUrl() {
+function getGameFromUrl() {
   const params = new URLSearchParams(location.search);
-  const issue = Number(params.get("issue") || params.get("game") || 0);
-  return Number.isFinite(issue) && issue > 0 ? issue : null;
+  const game = Number(params.get("game") || 0);
+  return Number.isFinite(game) && game > 0 ? game : null;
 }
 
-function gameDataUrl(issueNumber) {
-  return `./data/game-${issueNumber}.json`;
+function getSavedGameNumber() {
+  const saved = Number(localStorage.getItem(STORAGE_KEY) || 0);
+  return Number.isFinite(saved) && saved > 0 ? saved : null;
 }
 
-function setUrlIssue(issueNumber) {
+function saveGameNumber(gameNumber) {
+  if (gameNumber) {
+    localStorage.setItem(STORAGE_KEY, String(gameNumber));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+function gameDataUrl(gameNumber) {
+  return `./data/game-${gameNumber}.json`;
+}
+
+function setUrlGame(gameNumber) {
   const url = new URL(location.href);
 
-  if (issueNumber) {
-    url.searchParams.set("issue", String(issueNumber));
+  if (gameNumber) {
+    url.searchParams.set("game", String(gameNumber));
   } else {
-    url.searchParams.delete("issue");
+    url.searchParams.delete("game");
   }
 
   history.replaceState(null, "", url);
@@ -192,15 +206,15 @@ function applyLineupListStyle() {
   }
 }
 
-function updateIssueDisplay(data) {
-  const issue = data.issue_number || activeIssueNumber || "";
+function updateGameSelector(data) {
+  const gameNumber = data.issue_number || activeGameNumber || "";
 
-  if ($("viewIssueNumber")) {
-    $("viewIssueNumber").value = issue || "";
+  if ($("viewGameNumber")) {
+    $("viewGameNumber").value = gameNumber || "";
   }
 
-  if ($("currentIssueLabel")) {
-    $("currentIssueLabel").value = issue ? `Issue #${issue}` : "最新の試合";
+  if ($("currentGameLabel")) {
+    $("currentGameLabel").textContent = gameNumber ? `#${gameNumber}` : "最新";
   }
 }
 
@@ -231,7 +245,7 @@ function renderGame(data) {
   $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
 
   applyLineupListStyle();
-  updateIssueDisplay(data);
+  updateGameSelector(data);
 
   const events = data.events || [];
 
@@ -250,53 +264,90 @@ async function update() {
   renderGame(data);
 }
 
-async function loadSelectedGame() {
-  const issueNumber = Number($("viewIssueNumber").value);
+function showLoadError(message) {
+  if ($("gameStatus")) {
+    $("gameStatus").textContent = "読み込みエラー";
+  }
 
-  if (!Number.isFinite(issueNumber) || issueNumber <= 0) {
-    alert("Issue番号を入力してください。");
+  if ($("empty")) {
+    $("empty").hidden = false;
+    $("empty").textContent = message;
+  }
+}
+
+async function loadGameNumber(gameNumber) {
+  if (!Number.isFinite(gameNumber) || gameNumber <= 0) {
     return;
   }
 
-  activeIssueNumber = issueNumber;
-  activeDataUrl = gameDataUrl(issueNumber);
-  setUrlIssue(issueNumber);
+  activeGameNumber = gameNumber;
+  activeDataUrl = gameDataUrl(gameNumber);
+
+  saveGameNumber(gameNumber);
+  setUrlGame(gameNumber);
 
   try {
     await update();
   } catch (err) {
     console.error(err);
-
-    $("gameStatus").textContent = "読み込みエラー";
-    $("empty").hidden = false;
-    $("empty").textContent = `Issue #${issueNumber} の試合データを読み込めません。Actionsが成功しているか確認してください。`;
+    showLoadError(`試合 #${gameNumber} のデータを読み込めません。Actionsが成功しているか確認してください。`);
   }
+}
+
+async function loadSelectedGame() {
+  const gameNumber = Number($("viewGameNumber").value);
+  await loadGameNumber(gameNumber);
 }
 
 async function loadCurrentGame() {
-  activeIssueNumber = null;
+  activeGameNumber = null;
   activeDataUrl = CURRENT_DATA_URL;
-  setUrlIssue(null);
+
+  saveGameNumber(null);
+  setUrlGame(null);
 
   try {
     await update();
   } catch (err) {
     console.error(err);
-
-    $("gameStatus").textContent = "読み込みエラー";
-    $("empty").hidden = false;
-    $("empty").textContent = err.message;
+    showLoadError(err.message);
   }
 }
 
-async function init() {
-  const issueFromUrl = getIssueFromUrl();
+function setupGameInputEvents() {
+  const input = $("viewGameNumber");
 
-  if (issueFromUrl) {
-    activeIssueNumber = issueFromUrl;
-    activeDataUrl = gameDataUrl(issueFromUrl);
+  if (!input) return;
+
+  input.addEventListener("keydown", async (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      await loadSelectedGame();
+      input.blur();
+    }
+  });
+
+  input.addEventListener("change", async () => {
+    await loadSelectedGame();
+  });
+}
+
+async function init() {
+  setupGameInputEvents();
+
+  const gameFromUrl = getGameFromUrl();
+  const savedGameNumber = getSavedGameNumber();
+
+  if (gameFromUrl) {
+    activeGameNumber = gameFromUrl;
+    activeDataUrl = gameDataUrl(gameFromUrl);
+    saveGameNumber(gameFromUrl);
+  } else if (savedGameNumber) {
+    activeGameNumber = savedGameNumber;
+    activeDataUrl = gameDataUrl(savedGameNumber);
+    setUrlGame(savedGameNumber);
   } else {
-    activeIssueNumber = null;
+    activeGameNumber = null;
     activeDataUrl = CURRENT_DATA_URL;
   }
 
@@ -304,15 +355,7 @@ async function init() {
     await update();
   } catch (err) {
     console.error(err);
-
-    if ($("gameStatus")) {
-      $("gameStatus").textContent = "読み込みエラー";
-    }
-
-    if ($("empty")) {
-      $("empty").hidden = false;
-      $("empty").textContent = err.message;
-    }
+    showLoadError(err.message);
   }
 }
 
