@@ -58,7 +58,9 @@ async function fetchGameIssues() {
 }
 
 async function fetchIssue(issueNumber) {
-  return githubFetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`);
+  return githubFetch(
+    `https://api.github.com/repos/${repository}/issues/${issueNumber}`
+  );
 }
 
 async function fetchComments(issueNumber) {
@@ -111,7 +113,15 @@ function numeric(value) {
 }
 
 function cellNumber(value) {
-  if (value === "" || value === null || value === undefined || value === "×") return 0;
+  if (
+    value === "" ||
+    value === null ||
+    value === undefined ||
+    value === "×"
+  ) {
+    return 0;
+  }
+
   return numeric(value);
 }
 
@@ -250,6 +260,7 @@ function processGame(issue, comments) {
       const inning = numeric(command.inning);
       const half = normalizeHalf(command.half);
       const finalChecked = command.final === true;
+      const playText = String(command.text || "").trim();
 
       if (inning >= 1) {
         ensureInning(awayRunsByInning, inning);
@@ -305,24 +316,47 @@ function processGame(issue, comments) {
         status = inningLabel(inning, half);
       }
 
-      events.push({
-        number: events.length + 1,
-        inning,
-        half,
-        inningLabel: finalChecked ? "試合終了" : inningLabel(inning, half),
-        attackTeam: finalChecked ? "" : attackTeam(match, half),
-        text: String(command.text || "").trim(),
-        created_at: source.created_at,
-        updated_at: source.updated_at,
-        html_url: source.html_url,
-        awayRuns: appliedAwayRuns,
-        homeRuns: appliedHomeRuns,
-        awayHits: appliedAwayHits,
-        homeHits: appliedHomeHits,
-        awayErrors: appliedAwayErrors,
-        homeErrors: appliedHomeErrors,
-        final: finalChecked
-      });
+      if (playText) {
+        events.push({
+          number: events.length + 1,
+          inning,
+          half,
+          inningLabel: inningLabel(inning, half),
+          attackTeam: attackTeam(match, half),
+          text: playText,
+          created_at: source.created_at,
+          updated_at: source.updated_at,
+          html_url: source.html_url,
+          awayRuns: appliedAwayRuns,
+          homeRuns: appliedHomeRuns,
+          awayHits: appliedAwayHits,
+          homeHits: appliedHomeHits,
+          awayErrors: appliedAwayErrors,
+          homeErrors: appliedHomeErrors,
+          final: false
+        });
+      }
+
+      if (finalChecked) {
+        events.push({
+          number: events.length + 1,
+          inning,
+          half,
+          inningLabel: "試合終了",
+          attackTeam: "",
+          text: "",
+          created_at: source.created_at,
+          updated_at: source.updated_at,
+          html_url: source.html_url,
+          awayRuns: 0,
+          homeRuns: 0,
+          awayHits: 0,
+          homeHits: 0,
+          awayErrors: 0,
+          homeErrors: 0,
+          final: true
+        });
+      }
     }
   }
 
@@ -487,7 +521,9 @@ async function main() {
     "utf8"
   );
 
-  console.log(`Generated ${games.length} game file(s). Current game: #${current.issue_number}`);
+  console.log(
+    `Generated ${games.length} game file(s). Current game: #${current.issue_number}`
+  );
 }
 
 main().catch((err) => {
