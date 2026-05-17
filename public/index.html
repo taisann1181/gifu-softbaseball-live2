@@ -5,6 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>高校軟式野球 速報</title>
   <link rel="stylesheet" href="./style.css">
+
+  <style>
+    .gameMiniSelector {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 10px 0 14px;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(15, 35, 60, 0.06);
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .gameMiniSelector span {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .gameMiniSelector input {
+      width: 58px;
+      min-width: 58px;
+      padding: 5px 6px;
+      border-radius: 999px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .gameMiniSelector button {
+      border: 0;
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: #eef3f8;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .gameMiniSelector .currentGameLabel {
+      color: var(--primary);
+    }
+
+    @media (max-width: 640px) {
+      .gameMiniSelector {
+        margin-left: 0;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -16,25 +70,12 @@
   </header>
 
   <main class="container">
-    <section class="panel">
-      <h2>試合を選択</h2>
-      <p class="help">Issue番号を入力すると、その番号の試合を表示できます。</p>
-
-      <div class="formGrid">
-        <label>Issue番号 / 試合番号
-          <input id="viewIssueNumber" type="number" min="1" placeholder="例：1">
-        </label>
-
-        <label>現在表示中
-          <input id="currentIssueLabel" readonly>
-        </label>
-      </div>
-
-      <div class="buttonRow">
-        <button class="button" type="button" onclick="loadSelectedGame()">この試合を表示</button>
-        <button class="button secondary" type="button" onclick="loadCurrentGame()">最新の試合を表示</button>
-      </div>
-    </section>
+    <div class="gameMiniSelector">
+      <span>試合番号</span>
+      <input id="viewGameNumber" type="number" min="1" inputmode="numeric" placeholder="1">
+      <span id="currentGameLabel" class="currentGameLabel">最新</span>
+      <button type="button" onclick="loadCurrentGame()">最新</button>
+    </div>
 
     <section class="scoreCard">
       <div class="scoreMeta">
