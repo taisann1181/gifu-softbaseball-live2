@@ -22,21 +22,13 @@
 
   <main class="container">
     <section class="panel">
-      <h2>入力先Issue</h2>
-      <p class="help">速報JSONを貼り付けるIssue番号を選択します。</p>
+      <h2>入力先の試合</h2>
+      <p class="help">JSONを貼り付ける試合番号を選択します。試合番号はGitHub Issue番号と同じです。</p>
 
-      <div class="formGrid">
-        <label>Issue番号
-          <select id="issueNumber" onchange="syncIssueUrl()"></select>
-        </label>
-
-        <label>入力先
-          <input id="issueUrlPreview" readonly>
-        </label>
-      </div>
-
-      <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="openCurrentIssue()">選択したIssueを開く</button>
+      <div class="gameMiniSelector">
+        <span>試合番号</span>
+        <input id="issueNumber" type="number" min="1" inputmode="numeric" placeholder="1">
+        <button type="button" onclick="openCurrentIssue()">開く</button>
       </div>
     </section>
 
@@ -161,13 +153,13 @@
 
     <section class="panel">
       <h2>コピーしてIssueに貼る</h2>
-      <p class="help">生成したJSONをコピーし、選択したIssueのコメントに貼り付けます。</p>
+      <p class="help">生成したJSONをコピーし、選択した試合番号のIssueコメントに貼り付けます。</p>
 
       <textarea id="output" rows="12" readonly></textarea>
 
       <div class="buttonRow">
         <button class="button" type="button" onclick="copyOutput()">コピー</button>
-        <button class="button secondary" type="button" onclick="openCurrentIssue()">選択したIssueを開く</button>
+        <button class="button secondary" type="button" onclick="openCurrentIssue()">選択した試合を開く</button>
       </div>
     </section>
   </main>
@@ -175,9 +167,10 @@
   <script>
     const REPO_OWNER = "taisann1181";
     const REPO_NAME = "gifu-softbaseball-live2";
+    const EDIT_STORAGE_KEY = "gifu_softbaseball_editor_game_number";
 
     let currentStep = 1;
-    let currentIssueNumber = 1;
+    let currentGameNumber = 1;
     let currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/1#issuecomment-new`;
 
     const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
@@ -198,26 +191,10 @@
       return `<option value="${value}">${label}</option>`;
     }
 
-    function fillIssueSelect(defaultNumber = 1) {
-      const select = el("issueNumber");
-
-      select.innerHTML = Array.from({ length: 100 }, (_, i) => {
-        const n = i + 1;
-        return optionHtml(n, `#${n}`);
-      }).join("");
-
-      select.value = String(defaultNumber);
-      currentIssueNumber = Number(select.value) || 1;
-      syncIssueUrl();
-    }
-
     function syncIssueUrl() {
-      currentIssueNumber = Number(value("issueNumber")) || 1;
-      currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/${currentIssueNumber}#issuecomment-new`;
-
-      if (el("issueUrlPreview")) {
-        el("issueUrlPreview").value = currentIssueUrl;
-      }
+      currentGameNumber = Number(value("issueNumber")) || 1;
+      currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/${currentGameNumber}#issuecomment-new`;
+      localStorage.setItem(EDIT_STORAGE_KEY, String(currentGameNumber));
     }
 
     function fillNumberSelect(id, max) {
@@ -243,11 +220,7 @@
         <option value="home">${home}</option>
       `;
 
-      if (current === "home") {
-        el("lineupTeam").value = "home";
-      } else {
-        el("lineupTeam").value = "away";
-      }
+      el("lineupTeam").value = current === "home" ? "home" : "away";
     }
 
     function positionSelectHtml(id) {
@@ -436,7 +409,7 @@
       }
 
       await navigator.clipboard.writeText(text);
-      alert(`コピーしました。Issue #${currentIssueNumber} のコメントに貼り付けてください。`);
+      alert(`コピーしました。試合 #${currentGameNumber} のIssueコメントに貼り付けてください。`);
     }
 
     function openCurrentIssue() {
@@ -452,28 +425,56 @@
       window.open(url, "_blank", "noreferrer");
     }
 
-    async function loadCurrentIssueNumber() {
+    async function loadDefaultGameNumber() {
+      const saved = Number(localStorage.getItem(EDIT_STORAGE_KEY) || 0);
+
+      if (Number.isFinite(saved) && saved > 0) {
+        el("issueNumber").value = String(saved);
+        syncIssueUrl();
+        return;
+      }
+
       try {
         const res = await fetch("./data/current.json?ts=" + Date.now(), {
           cache: "no-store"
         });
 
         if (!res.ok) {
-          fillIssueSelect(1);
+          el("issueNumber").value = "1";
+          syncIssueUrl();
           return;
         }
 
         const data = await res.json();
-        const issueNumber = Number(data.issue_number || 1);
+        const gameNumber = Number(data.issue_number || 1);
 
-        fillIssueSelect(issueNumber);
+        el("issueNumber").value = String(gameNumber);
+        syncIssueUrl();
       } catch {
-        fillIssueSelect(1);
+        el("issueNumber").value = "1";
+        syncIssueUrl();
       }
     }
 
+    function setupIssueNumberInput() {
+      const input = el("issueNumber");
+
+      input.addEventListener("change", () => {
+        syncIssueUrl();
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          syncIssueUrl();
+          input.blur();
+        }
+      });
+    }
+
     function init() {
-      loadCurrentIssueNumber();
+      setupIssueNumberInput();
+      loadDefaultGameNumber();
 
       fillInningSelect();
 
