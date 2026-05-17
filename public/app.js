@@ -174,8 +174,7 @@ function renderLineup(list) {
 function renderEvent(event) {
   const isFinal =
     event.final === true ||
-    event.inningLabel === "試合終了" ||
-    /試合終了|ゲームセット/.test(event.text || "");
+    event.inningLabel === "試合終了";
 
   if (isFinal) {
     return `
@@ -199,7 +198,6 @@ function renderEvent(event) {
     </article>
   `;
 }
-
 
 function updateGameSelector(data) {
   const gameNumber = data.issue_number || activeGameNumber || "";
@@ -284,7 +282,9 @@ async function loadGameNumber(gameNumber) {
     await update();
   } catch (err) {
     console.error(err);
-    showLoadError(`試合 #${gameNumber} のデータを読み込めません。Actionsが成功しているか確認してください。`);
+    showLoadError(
+      `試合 #${gameNumber} のデータを読み込めません。Actionsが成功しているか確認してください。`
+    );
   }
 }
 
