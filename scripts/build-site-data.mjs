@@ -122,6 +122,7 @@ function addToCell(arr, inning, value) {
 
 function sumRuns(arr, touched) {
   if (!touched) return "";
+
   return arr.reduce((total, value) => {
     if (value === "×") return total;
     return total + cellNumber(value);
@@ -140,16 +141,20 @@ function normalizeHalf(half) {
 
 function inningLabel(inning, half) {
   const h = normalizeHalf(half);
+
   if (!inning) return "速報";
   if (h === "top") return `${inning}回表`;
   if (h === "bottom") return `${inning}回裏`;
+
   return `${inning}回`;
 }
 
 function attackTeam(match, half) {
   const h = normalizeHalf(half);
+
   if (h === "top") return match.awayTeam || "先攻";
   if (h === "bottom") return match.homeTeam || "後攻";
+
   return "";
 }
 
@@ -321,7 +326,11 @@ function processGame(issue, comments) {
     }
   }
 
-  const maxLength = Math.max(BASE_INNINGS, awayRunsByInning.length, homeRunsByInning.length);
+  const maxLength = Math.max(
+    BASE_INNINGS,
+    awayRunsByInning.length,
+    homeRunsByInning.length
+  );
 
   ensureInning(awayRunsByInning, maxLength);
   ensureInning(homeRunsByInning, maxLength);
@@ -403,7 +412,12 @@ async function main() {
   if (gameIssues.length === 0) {
     const empty = blankGame();
 
-    await fs.writeFile("public/data/current.json", JSON.stringify(empty, null, 2), "utf8");
+    await fs.writeFile(
+      "public/data/current.json",
+      JSON.stringify(empty, null, 2),
+      "utf8"
+    );
+
     await fs.writeFile(
       "public/data/games.json",
       JSON.stringify(
@@ -457,6 +471,7 @@ async function main() {
         repository,
         current_issue_number: current.issue_number,
         games: games.map((game) => ({
+          game_number: game.issue_number,
           issue_number: game.issue_number,
           issue_title: game.issue_title,
           issue_url: game.issue_url,
@@ -472,7 +487,7 @@ async function main() {
     "utf8"
   );
 
-  console.log(`Generated ${games.length} game file(s). Current issue: #${current.issue_number}`);
+  console.log(`Generated ${games.length} game file(s). Current game: #${current.issue_number}`);
 }
 
 main().catch((err) => {
