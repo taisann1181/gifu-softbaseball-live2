@@ -7,6 +7,8 @@
   --primary: #0b3b75;
   --primary2: #0f5aa8;
   --green: #0b8a49;
+  --red: #c91f1f;
+  --orange: #b96b00;
   --shadow: 0 12px 34px rgba(15, 35, 60, 0.12);
 }
 
@@ -56,39 +58,21 @@ h1 {
   font-size: 14px;
 }
 
-.editLink,
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  background: var(--primary2);
-  color: white;
-  text-decoration: none;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.editLink {
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.button.secondary {
-  background: #eef3f8;
-  color: var(--primary);
-}
-
 .container {
-  max-width: 960px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 18px;
 }
 
+.editorContainer {
+  padding-bottom: 120px;
+}
+
 .scoreCard,
-.panel {
+.panel,
+.livePanel,
+.atBatCard,
+.noteCard {
   background: var(--card);
   border-radius: 22px;
   box-shadow: var(--shadow);
@@ -97,7 +81,8 @@ h1 {
   margin-bottom: 16px;
 }
 
-.panel {
+.panel,
+.livePanel {
   padding: 16px;
 }
 
@@ -146,6 +131,80 @@ h1 {
 .lineScore .total {
   color: var(--primary);
   font-size: 20px;
+}
+
+.livePanelHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.liveInning {
+  margin: 0 0 4px;
+  color: var(--primary);
+  font-weight: 1000;
+  font-size: 14px;
+}
+
+.livePanel h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.countBox {
+  display: flex;
+  gap: 8px;
+}
+
+.countBox div {
+  min-width: 48px;
+  text-align: center;
+  border-radius: 14px;
+  padding: 8px 9px;
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+}
+
+.countBox span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.countBox strong {
+  display: block;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.matchupGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 12px;
+}
+
+.matchupGrid div {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 10px 12px;
+  background: #fbfcff;
+}
+
+.matchupGrid p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.matchupGrid strong {
+  font-size: 17px;
 }
 
 .panelHead h2,
@@ -206,73 +265,182 @@ h1 {
 
 .feed {
   display: grid;
+  gap: 14px;
+}
+
+.atBatCard {
+  padding: 0;
+}
+
+.atBatHead {
+  display: flex;
+  justify-content: space-between;
   gap: 12px;
-}
-
-.event {
-  position: relative;
-  display: grid;
-  grid-template-columns: 86px 1fr;
-  gap: 12px;
-  background: var(--card);
-  border: 1px solid rgba(216, 224, 234, 0.95);
-  border-radius: 18px;
-  box-shadow: 0 8px 22px rgba(15, 35, 60, 0.07);
-  overflow: hidden;
-}
-
-.event::before {
-  content: "";
-  position: absolute;
-  left: 86px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--line);
-}
-
-.eventTime {
-  padding: 14px 10px;
-  text-align: center;
+  align-items: flex-start;
+  padding: 14px 16px;
   background: #f7f9fc;
+  border-bottom: 1px solid var(--line);
 }
 
 .inning {
-  font-size: 15px;
-  font-weight: 1000;
+  margin: 0 0 4px;
   color: var(--primary);
+  font-weight: 1000;
+  font-size: 14px;
 }
 
-.attackTeam {
-  margin-top: 3px;
-  font-size: 12px;
+.atBatHead h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.atBatMeta {
   color: var(--muted);
+  font-size: 12px;
   font-weight: 800;
 }
 
-.clock {
-  margin-top: 4px;
+.batterPitcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.batterPitcher div {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 9px 10px;
+}
+
+.batterPitcher p {
+  margin: 0 0 4px;
   color: var(--muted);
   font-size: 12px;
+  font-weight: 900;
 }
 
-.eventBody {
-  padding: 13px 14px 14px 2px;
+.batterPitcher strong {
+  font-size: 16px;
 }
 
-.eventText {
-  white-space: pre-wrap;
-  line-height: 1.65;
-  font-size: 15px;
+.pitchEmpty {
+  padding: 14px 16px;
+  color: var(--muted);
 }
 
-.eventLink {
-  display: inline-block;
-  margin-top: 10px;
-  color: var(--primary2);
+.pitchTable {
+  display: grid;
+}
+
+.pitchRow {
+  display: grid;
+  grid-template-columns: 70px 1fr 70px;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pitchNo {
+  color: var(--primary);
+  font-weight: 1000;
   font-size: 13px;
-  text-decoration: none;
-  font-weight: 800;
+}
+
+.pitchMain strong {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.pitchMain span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pitchMain p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.pitchCount {
+  text-align: right;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.paResult {
+  padding: 14px 16px;
+  background: #fbfcff;
+}
+
+.paResult span {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #e7f0fb;
+  color: var(--primary);
+  font-weight: 1000;
+  font-size: 12px;
+  padding: 4px 9px;
+  margin-right: 8px;
+}
+
+.paResult strong {
+  font-size: 18px;
+}
+
+.paResult em {
+  margin-left: 8px;
+  color: var(--orange);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.paResult p {
+  margin: 8px 0 0;
+  line-height: 1.65;
+}
+
+.noteCard {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.noteLabel {
+  align-self: start;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #fff5dc;
+  color: #9a6500;
+  font-size: 12px;
+  text-align: center;
+  font-weight: 1000;
+}
+
+.noteText {
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.finalEvent {
+  background: #111827;
+  color: white;
+  border-radius: 18px;
+  padding: 18px 20px;
+  text-align: center;
+  box-shadow: 0 8px 22px rgba(15, 35, 60, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.finalEventTitle {
+  font-size: 22px;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
 }
 
 .empty {
@@ -290,6 +458,37 @@ h1 {
   padding: 0 18px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.editLink,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: var(--primary2);
+  color: white;
+  text-decoration: none;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editLink {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.button.secondary {
+  background: #eef3f8;
+  color: var(--primary);
+}
+
+.buttonRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .formGrid {
@@ -319,12 +518,6 @@ textarea {
 
 textarea {
   resize: vertical;
-}
-
-.buttonRow {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
 }
 
 .stepLabel {
@@ -378,11 +571,6 @@ textarea {
   width: auto;
 }
 
-.stepPanel[hidden],
-[hidden] {
-  display: none !important;
-}
-
 .gameMiniSelector {
   display: inline-flex;
   align-items: center;
@@ -404,9 +592,10 @@ textarea {
   white-space: nowrap;
 }
 
-.gameMiniSelector input {
-  width: 58px;
-  min-width: 58px;
+.gameMiniSelector input,
+.gameMiniSelector select {
+  width: 66px;
+  min-width: 66px;
   padding: 5px 6px;
   border-radius: 999px;
   text-align: center;
@@ -429,41 +618,42 @@ textarea {
   color: var(--primary);
 }
 
-@media (max-width: 640px) {
+.outputPanel {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
   .topbar {
     align-items: flex-start;
   }
 
   .formGrid,
-  .lineupGrid {
+  .lineupGrid,
+  .matchupGrid,
+  .batterPitcher {
     grid-template-columns: 1fr;
   }
 
-  .event {
-    grid-template-columns: 74px 1fr;
+  .pitchRow {
+    grid-template-columns: 64px 1fr;
   }
 
-  .event::before {
-    left: 74px;
+  .pitchCount {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .noteCard {
+    grid-template-columns: 1fr;
   }
 
   .gameMiniSelector {
     margin-left: 0;
   }
-    }
-
-.finalEvent {
-  background: #111827;
-  color: white;
-  border-radius: 18px;
-  padding: 18px 20px;
-  text-align: center;
-  box-shadow: 0 8px 22px rgba(15, 35, 60, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.finalEventTitle {
-  font-size: 22px;
-  font-weight: 1000;
-  letter-spacing: 0.08em;
-}
+  }
