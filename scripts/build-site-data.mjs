@@ -58,9 +58,7 @@ async function fetchGameIssues() {
 }
 
 async function fetchIssue(issueNumber) {
-  return githubFetch(
-    `https://api.github.com/repos/${repository}/issues/${issueNumber}`
-  );
+  return githubFetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`);
 }
 
 async function fetchComments(issueNumber) {
@@ -113,12 +111,7 @@ function numeric(value) {
 }
 
 function cellNumber(value) {
-  if (
-    value === "" ||
-    value === null ||
-    value === undefined ||
-    value === "×"
-  ) {
+  if (value === "" || value === null || value === undefined || value === "×") {
     return 0;
   }
 
@@ -168,6 +161,14 @@ function attackTeam(match, half) {
   return "";
 }
 
+function baseState(command, prefix = "") {
+  return {
+    first: String(command[`${prefix}base1`] ?? command[`${prefix}first`] ?? ""),
+    second: String(command[`${prefix}base2`] ?? command[`${prefix}second`] ?? ""),
+    third: String(command[`${prefix}base3`] ?? command[`${prefix}third`] ?? "")
+  };
+}
+
 function cleanMatchCommand(command) {
   return {
     title: String(command.title || ""),
@@ -190,6 +191,46 @@ function cleanLineupPlayers(players) {
       position: String(player.position || "").trim()
     }))
     .filter((player) => player.name || player.position);
+}
+
+function makeEmptyAtBat(match, source, command) {
+  const inning = numeric(command.inning);
+  const half = normalizeHalf(command.half);
+
+  return {
+    number: 0,
+    inning,
+    half,
+    inningLabel: inningLabel(inning, half),
+    attackTeam: attackTeam(match, half),
+    batter: String(command.batter || ""),
+    pitcher: String(command.pitcher || ""),
+    outsStart: numeric(command.outs),
+    outsEnd: "",
+    basesStart: baseState(command),
+    basesEnd: baseState(command),
+    pitches: [],
+    result: "",
+    resultDetail: "",
+    text: "",
+    runs: 0,
+    hits: 0,
+    errors: 0,
+    rbi: 0,
+    final: false,
+    created_at: source.created_at,
+    updated_at: source.updated_at,
+    html_url: source.html_url
+  };
+}
+
+function latestPitchCount(atBat) {
+  const last = atBat?.pitches?.at(-1);
+
+  return {
+    ball: last?.ball ?? 0,
+    strike: last?.strike ?? 0
+  };
 }
 
 function processGame(issue, comments) {
@@ -217,8 +258,11 @@ function processGame(issue, comments) {
 
   let status = "試合前";
   let isFinal = false;
+  let currentAtBat = null;
 
-  const events = [];
+  const atBats = [];
+  const notes = [];
+  const timeline = [];
 
   const sources = [
     {
@@ -238,6 +282,25 @@ function processGame(issue, comments) {
     }))
   ];
 
+  function pushAtBat(atBat) {
+    atBat.number = atBats.length + 1;
+    atBats.push(atBat);
+    timeline.push({
+      kind: "atbat",
+      number: atBat.number,
+      created_at: atBat.created_at
+    });
+    currentAtBat = atBat;
+  }
+
+  function getOrCreateAtBat(source, command) {
+    if (currentAtBat) return currentAtBat;
+
+    const atBat = makeEmptyAtBat(match, source, command);
+    pushAtBat(atBat);
+    return atBat;
+  }
+
   for (const source of sources) {
     const command = parseCommand(source.body);
     if (!command || !command.type) continue;
@@ -256,53 +319,104 @@ function processGame(issue, comments) {
       continue;
     }
 
-    if (command.type === "event") {
-      const inning = numeric(command.inning);
-      const half = normalizeHalf(command.half);
+    if (command.type === "pa_start") {
+      const atBat = makeEmptyAtBat(match, source, command);
+      status = inningLabel(atBat.inning, atBat.half);
+      pushAtBat(atBat);
+      continue;
+    }
+
+    if (command.type === "pitch") {
+      const atBat = getOrCreateAtBat(source, command);
+      const pitchNo = numeric(command.pitchNo) || atBat.pitches.length + 1;
+
+      atBat.pitches.push({
+        number: pitchNo,
+        result: String(command.result || ""),
+        detail: String(command.detail || ""),
+        pitchType: String(command.pitchType || ""),
+        speed: String(command.speed || ""),
+        course: String(command.course || ""),
+        zone: String(command.zone || ""),
+        ball: numeric(command.ball),
+        strike: numeric(command.strike),
+        runnerEvent: String(command.runnerEvent || ""),
+        text: String(command.text || ""),
+        created_at: source.created_at,
+        updated_at: source.updated_at,
+        html_url: source.html_url
+      });
+
+      status = atBat.inningLabel;
+      continue;
+    }
+
+    if (command.type === "pa_result") {
+      const atBat = getOrCreateAtBat(source, command);
+      const inning = numeric(command.inning) || atBat.inning;
+      const half = normalizeHalf(command.half) || atBat.half;
       const finalChecked = command.final === true;
-      const playText = String(command.text || "").trim();
+
+      atBat.inning = inning;
+      atBat.half = half;
+      atBat.inningLabel = inningLabel(inning, half);
+      atBat.attackTeam = attackTeam(match, half);
 
       if (inning >= 1) {
         ensureInning(awayRunsByInning, inning);
         ensureInning(homeRunsByInning, inning);
       }
 
-      let appliedAwayRuns = 0;
-      let appliedHomeRuns = 0;
-      let appliedAwayHits = 0;
-      let appliedHomeHits = 0;
-      let appliedAwayErrors = 0;
-      let appliedHomeErrors = 0;
+      let appliedRuns = numeric(command.runs);
+      let appliedHits = numeric(command.hits);
+      let appliedErrors = numeric(command.errors);
+
+      if (command.runs === undefined) {
+        appliedRuns = half === "top" ? numeric(command.awayRuns) : numeric(command.homeRuns);
+      }
+
+      if (command.hits === undefined) {
+        appliedHits = half === "top" ? numeric(command.awayHits) : numeric(command.homeHits);
+      }
+
+      if (command.errors === undefined) {
+        appliedErrors = half === "top" ? numeric(command.homeErrors) : numeric(command.awayErrors);
+      }
 
       if (inning >= 1 && half === "top") {
-        appliedAwayRuns = numeric(command.awayRuns);
-        appliedAwayHits = numeric(command.awayHits);
-        appliedHomeErrors = numeric(command.homeErrors);
-
-        addToCell(awayRunsByInning, inning, appliedAwayRuns);
+        addToCell(awayRunsByInning, inning, appliedRuns);
         awayRunsTouched = true;
 
-        awayHits += appliedAwayHits;
+        awayHits += appliedHits;
         awayHitsTouched = true;
 
-        homeErrors += appliedHomeErrors;
+        homeErrors += appliedErrors;
         homeErrorsTouched = true;
       }
 
       if (inning >= 1 && half === "bottom") {
-        appliedHomeRuns = numeric(command.homeRuns);
-        appliedHomeHits = numeric(command.homeHits);
-        appliedAwayErrors = numeric(command.awayErrors);
-
-        addToCell(homeRunsByInning, inning, appliedHomeRuns);
+        addToCell(homeRunsByInning, inning, appliedRuns);
         homeRunsTouched = true;
 
-        homeHits += appliedHomeHits;
+        homeHits += appliedHits;
         homeHitsTouched = true;
 
-        awayErrors += appliedAwayErrors;
+        awayErrors += appliedErrors;
         awayErrorsTouched = true;
       }
+
+      atBat.outsEnd = numeric(command.outs);
+      atBat.basesEnd = baseState(command);
+      atBat.result = String(command.result || "");
+      atBat.resultDetail = String(command.detail || "");
+      atBat.text = String(command.text || "");
+      atBat.runs = appliedRuns;
+      atBat.hits = appliedHits;
+      atBat.errors = appliedErrors;
+      atBat.rbi = numeric(command.rbi);
+      atBat.final = finalChecked;
+      atBat.updated_at = source.updated_at;
+      atBat.html_url = source.html_url;
 
       if (finalChecked) {
         isFinal = true;
@@ -312,51 +426,40 @@ function processGame(issue, comments) {
           ensureInning(homeRunsByInning, inning);
           homeRunsByInning[inning - 1] = "×";
         }
-      } else if (inning >= 1) {
-        status = inningLabel(inning, half);
+      } else {
+        status = atBat.inningLabel;
       }
 
-      if (playText) {
-        events.push({
-          number: events.length + 1,
-          inning,
-          half,
-          inningLabel: inningLabel(inning, half),
-          attackTeam: attackTeam(match, half),
-          text: playText,
-          created_at: source.created_at,
-          updated_at: source.updated_at,
-          html_url: source.html_url,
-          awayRuns: appliedAwayRuns,
-          homeRuns: appliedHomeRuns,
-          awayHits: appliedAwayHits,
-          homeHits: appliedHomeHits,
-          awayErrors: appliedAwayErrors,
-          homeErrors: appliedHomeErrors,
-          final: false
-        });
-      }
+      currentAtBat = null;
+      continue;
+    }
 
-      if (finalChecked) {
-        events.push({
-          number: events.length + 1,
-          inning,
-          half,
-          inningLabel: "試合終了",
-          attackTeam: "",
-          text: "",
-          created_at: source.created_at,
-          updated_at: source.updated_at,
-          html_url: source.html_url,
-          awayRuns: 0,
-          homeRuns: 0,
-          awayHits: 0,
-          homeHits: 0,
-          awayErrors: 0,
-          homeErrors: 0,
-          final: true
-        });
-      }
+    if (command.type === "note") {
+      const inning = numeric(command.inning);
+      const half = normalizeHalf(command.half);
+
+      const note = {
+        number: notes.length + 1,
+        category: String(command.category || "メモ"),
+        inning,
+        half,
+        inningLabel: inningLabel(inning, half),
+        attackTeam: attackTeam(match, half),
+        text: String(command.text || ""),
+        created_at: source.created_at,
+        updated_at: source.updated_at,
+        html_url: source.html_url
+      };
+
+      notes.push(note);
+
+      timeline.push({
+        kind: "note",
+        number: note.number,
+        created_at: note.created_at
+      });
+
+      continue;
     }
   }
 
@@ -372,6 +475,35 @@ function processGame(issue, comments) {
   const awayRuns = sumRuns(awayRunsByInning, awayRunsTouched);
   const homeRuns = sumRuns(homeRunsByInning, homeRunsTouched);
 
+  const latestAtBat = atBats.at(-1) || null;
+  const count = latestPitchCount(latestAtBat);
+
+  const currentState = latestAtBat
+    ? {
+        inningLabel: latestAtBat.inningLabel,
+        attackTeam: latestAtBat.attackTeam,
+        batter: latestAtBat.batter,
+        pitcher: latestAtBat.pitcher,
+        ball: count.ball,
+        strike: count.strike,
+        outs: latestAtBat.outsEnd === "" ? latestAtBat.outsStart : latestAtBat.outsEnd,
+        bases: latestAtBat.result ? latestAtBat.basesEnd : latestAtBat.basesStart
+      }
+    : {
+        inningLabel: "",
+        attackTeam: "",
+        batter: "",
+        pitcher: "",
+        ball: 0,
+        strike: 0,
+        outs: 0,
+        bases: {
+          first: "",
+          second: "",
+          third: ""
+        }
+      };
+
   return {
     generated_at: new Date().toISOString(),
     repository,
@@ -381,6 +513,7 @@ function processGame(issue, comments) {
     match,
     status,
     isFinal,
+    currentState,
     lineScore: {
       innings: Array.from({ length: maxLength }, (_, i) => i + 1),
       away: {
@@ -399,7 +532,9 @@ function processGame(issue, comments) {
       }
     },
     lineups,
-    events
+    atBats,
+    notes,
+    timeline
   };
 }
 
@@ -413,6 +548,20 @@ function blankGame() {
     match: { ...BLANK_MATCH },
     status: "試合前",
     isFinal: false,
+    currentState: {
+      inningLabel: "",
+      attackTeam: "",
+      batter: "",
+      pitcher: "",
+      ball: 0,
+      strike: 0,
+      outs: 0,
+      bases: {
+        first: "",
+        second: "",
+        third: ""
+      }
+    },
     lineScore: {
       innings: Array.from({ length: BASE_INNINGS }, (_, i) => i + 1),
       away: {
@@ -434,7 +583,9 @@ function blankGame() {
       away: [],
       home: []
     },
-    events: []
+    atBats: [],
+    notes: [],
+    timeline: []
   };
 }
 
@@ -446,11 +597,7 @@ async function main() {
   if (gameIssues.length === 0) {
     const empty = blankGame();
 
-    await fs.writeFile(
-      "public/data/current.json",
-      JSON.stringify(empty, null, 2),
-      "utf8"
-    );
+    await fs.writeFile("public/data/current.json", JSON.stringify(empty, null, 2), "utf8");
 
     await fs.writeFile(
       "public/data/games.json",
@@ -521,9 +668,7 @@ async function main() {
     "utf8"
   );
 
-  console.log(
-    `Generated ${games.length} game file(s). Current game: #${current.issue_number}`
-  );
+  console.log(`Generated ${games.length} game file(s). Current game: #${current.issue_number}`);
 }
 
 main().catch((err) => {
