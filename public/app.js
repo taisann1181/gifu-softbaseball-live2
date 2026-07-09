@@ -153,50 +153,147 @@ function renderLineup(list) {
   }
 
   return list.map((player) => {
-    if (typeof player === "string") {
-      return `<li>${escapeHtml(player)}</li>`;
-    }
-
-    const order = player.order
-      ? `<span class="batOrder">${escapeHtml(player.order)}.</span>`
-      : "";
-
+    const order = player.order ? `<span class="batOrder">${escapeHtml(player.order)}.</span>` : "";
     const name = escapeHtml(player.name || "");
     const posText = normalizePosition(player.position);
-    const pos = posText
-      ? ` <span class="pos">(${escapeHtml(posText)})</span>`
-      : "";
+    const pos = posText ? ` <span class="pos">(${escapeHtml(posText)})</span>` : "";
 
     return `<li>${order}${name}${pos}</li>`;
   }).join("");
 }
 
-function renderEvent(event) {
-  const isFinal =
-    event.final === true ||
-    event.inningLabel === "試合終了";
+function baseText(bases) {
+  const list = [];
 
-  if (isFinal) {
-    return `
-      <article class="finalEvent">
-        <div class="finalEventTitle">試合終了</div>
-      </article>
-    `;
+  if (bases?.first) list.push(`一:${bases.first}`);
+  if (bases?.second) list.push(`二:${bases.second}`);
+  if (bases?.third) list.push(`三:${bases.third}`);
+
+  return list.length ? list.join(" / ") : "なし";
+}
+
+function renderPitchRows(pitches) {
+  if (!Array.isArray(pitches) || pitches.length === 0) {
+    return `<div class="pitchEmpty">まだ球歴はありません</div>`;
   }
 
   return `
-    <article class="event">
-      <div class="eventTime">
-        <div class="inning">${escapeHtml(event.inningLabel || "速報")}</div>
-        <div class="attackTeam">${escapeHtml(event.attackTeam || "")}</div>
-        <div class="clock">${escapeHtml(formatClock(event.created_at))}</div>
+    <div class="pitchTable">
+      ${pitches.map((pitch) => `
+        <div class="pitchRow">
+          <div class="pitchNo">${escapeHtml(pitch.number)}球目</div>
+          <div class="pitchMain">
+            <strong>${escapeHtml(pitch.result || "記録")}</strong>
+            <span>${[
+              pitch.pitchType,
+              pitch.course,
+              pitch.zone,
+              pitch.speed ? `${pitch.speed}km/h` : "",
+              pitch.runnerEvent
+            ].filter(Boolean).map(escapeHtml).join(" / ")}</span>
+            ${pitch.text ? `<p>${escapeHtml(pitch.text)}</p>` : ""}
+          </div>
+          <div class="pitchCount">B${escapeHtml(pitch.ball)} S${escapeHtml(pitch.strike)}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderAtBat(atBat) {
+  return `
+    <article class="atBatCard">
+      <div class="atBatHead">
+        <div>
+          <p class="inning">${escapeHtml(atBat.inningLabel || "速報")}</p>
+          <h3>${escapeHtml(atBat.attackTeam || "")}</h3>
+        </div>
+        <div class="atBatMeta">
+          <span>${escapeHtml(formatClock(atBat.created_at))}</span>
+        </div>
       </div>
 
-      <div class="eventBody">
-        <div class="eventText">${escapeHtml(event.text || "")}</div>
+      <div class="batterPitcher">
+        <div>
+          <p>打者</p>
+          <strong>${escapeHtml(atBat.batter || "--")}</strong>
+        </div>
+        <div>
+          <p>投手</p>
+          <strong>${escapeHtml(atBat.pitcher || "--")}</strong>
+        </div>
+        <div>
+          <p>開始時</p>
+          <strong>${escapeHtml(atBat.outsStart)}アウト / ${escapeHtml(baseText(atBat.basesStart))}</strong>
+        </div>
+      </div>
+
+      ${renderPitchRows(atBat.pitches)}
+
+      ${
+        atBat.result || atBat.text
+          ? `
+            <div class="paResult">
+              <span>結果</span>
+              <strong>${escapeHtml(atBat.result || "")}</strong>
+              ${atBat.resultDetail ? `<em>${escapeHtml(atBat.resultDetail)}</em>` : ""}
+              ${atBat.text ? `<p>${escapeHtml(atBat.text)}</p>` : ""}
+            </div>
+          `
+          : ""
+      }
+    </article>
+  `;
+}
+
+function renderNote(note) {
+  return `
+    <article class="noteCard">
+      <div class="noteLabel">${escapeHtml(note.category || "メモ")}</div>
+      <div>
+        <p class="inning">${escapeHtml(note.inningLabel || "速報")}</p>
+        <div class="noteText">${escapeHtml(note.text || "")}</div>
       </div>
     </article>
   `;
+}
+
+function renderTimeline(data) {
+  const atBatMap = new Map((data.atBats || []).map((atBat) => [atBat.number, atBat]));
+  const noteMap = new Map((data.notes || []).map((note) => [note.number, note]));
+
+  const timeline = data.timeline || [];
+
+  if (!timeline.length) {
+    return "";
+  }
+
+  return timeline.map((item) => {
+    if (item.kind === "atbat") {
+      const atBat = atBatMap.get(item.number);
+      return atBat ? renderAtBat(atBat) : "";
+    }
+
+    if (item.kind === "note") {
+      const note = noteMap.get(item.number);
+      return note ? renderNote(note) : "";
+    }
+
+    return "";
+  }).join("");
+}
+
+function updateCurrentPanel(data) {
+  const state = data.currentState || {};
+
+  $("currentInning").textContent = state.inningLabel || "--";
+  $("currentAttack").textContent = state.attackTeam || "現在の攻撃";
+  $("currentBatter").textContent = state.batter || "--";
+  $("currentPitcher").textContent = state.pitcher || "--";
+  $("currentBases").textContent = baseText(state.bases || {});
+  $("ballCount").textContent = state.ball ?? 0;
+  $("strikeCount").textContent = state.strike ?? 0;
+  $("outCount").textContent = state.outs ?? 0;
 }
 
 function updateGameSelector(data) {
@@ -214,7 +311,7 @@ function updateGameSelector(data) {
 function renderGame(data) {
   const match = data.match || {};
 
-  $("matchTitle").textContent = match.title || "試合速報";
+  $("matchTitle").textContent = match.title || "1球速報";
 
   $("matchSub").textContent = [
     match.date,
@@ -233,22 +330,29 @@ function renderGame(data) {
 
   $("awayLineupTitle").textContent = match.awayTeam || "先攻";
   $("homeLineupTitle").textContent = match.homeTeam || "後攻";
-
   $("awayLineup").innerHTML = renderLineup(data.lineups?.away || []);
   $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
 
+  updateCurrentPanel(data);
   updateGameSelector(data);
 
-  const events = data.events || [];
+  const feed = renderTimeline(data);
 
-  if (events.length === 0) {
+  if (!feed) {
     $("empty").hidden = false;
     $("feed").innerHTML = "";
-    return;
+  } else {
+    $("empty").hidden = true;
+    $("feed").innerHTML = feed;
   }
 
-  $("empty").hidden = true;
-  $("feed").innerHTML = events.map(renderEvent).join("");
+  if (data.isFinal) {
+    $("feed").innerHTML += `
+      <article class="finalEvent">
+        <div class="finalEventTitle">試合終了</div>
+      </article>
+    `;
+  }
 }
 
 async function update() {
@@ -257,20 +361,13 @@ async function update() {
 }
 
 function showLoadError(message) {
-  if ($("gameStatus")) {
-    $("gameStatus").textContent = "読み込みエラー";
-  }
-
-  if ($("empty")) {
-    $("empty").hidden = false;
-    $("empty").textContent = message;
-  }
+  $("gameStatus").textContent = "読み込みエラー";
+  $("empty").hidden = false;
+  $("empty").textContent = message;
 }
 
 async function loadGameNumber(gameNumber) {
-  if (!Number.isFinite(gameNumber) || gameNumber <= 0) {
-    return;
-  }
+  if (!Number.isFinite(gameNumber) || gameNumber <= 0) return;
 
   activeGameNumber = gameNumber;
   activeDataUrl = gameDataUrl(gameNumber);
@@ -282,9 +379,7 @@ async function loadGameNumber(gameNumber) {
     await update();
   } catch (err) {
     console.error(err);
-    showLoadError(
-      `試合 #${gameNumber} のデータを読み込めません。Actionsが成功しているか確認してください。`
-    );
+    showLoadError(`試合 #${gameNumber} のデータを読み込めません。Actionsが成功しているか確認してください。`);
   }
 }
 
@@ -310,7 +405,6 @@ async function loadCurrentGame() {
 
 function setupGameInputEvents() {
   const input = $("viewGameNumber");
-
   if (!input) return;
 
   input.addEventListener("keydown", async (event) => {
