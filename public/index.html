@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>高校軟式野球 速報</title>
+  <title>高校軟式野球 1球速報</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <header class="topbar">
     <div>
       <p class="eyebrow">高校軟式野球 LIVE</p>
-      <h1 id="matchTitle">試合速報</h1>
+      <h1 id="matchTitle">1球速報</h1>
       <p id="matchSub" class="sub">読み込み中...</p>
     </div>
   </header>
@@ -32,6 +32,35 @@
       <div id="lineScoreWrap" class="lineScoreWrap"></div>
     </section>
 
+    <section class="livePanel">
+      <div class="livePanelHead">
+        <div>
+          <p id="currentInning" class="liveInning">--</p>
+          <h2 id="currentAttack">現在の攻撃</h2>
+        </div>
+        <div class="countBox">
+          <div><span>B</span><strong id="ballCount">0</strong></div>
+          <div><span>S</span><strong id="strikeCount">0</strong></div>
+          <div><span>O</span><strong id="outCount">0</strong></div>
+        </div>
+      </div>
+
+      <div class="matchupGrid">
+        <div>
+          <p>打者</p>
+          <strong id="currentBatter">--</strong>
+        </div>
+        <div>
+          <p>投手</p>
+          <strong id="currentPitcher">--</strong>
+        </div>
+        <div>
+          <p>走者</p>
+          <strong id="currentBases">なし</strong>
+        </div>
+      </div>
+    </section>
+
     <section class="panel">
       <div class="panelHead">
         <h2>スタメン</h2>
@@ -50,21 +79,21 @@
     </section>
 
     <section class="feedHeader">
-      <h2>試合経過</h2>
-      <p>Issueコメントから生成した試合データを表示しています。</p>
+      <h2>1球速報</h2>
+      <p>打席ごとの球歴と結果を表示します。</p>
     </section>
 
     <section id="feed" class="feed"></section>
 
     <section id="empty" class="empty" hidden>
-      まだ速報コメントがありません。
+      まだ速報データがありません。
     </section>
   </main>
 
   <footer class="footer">
-    非公式速報ページです。内容は入力されたコメントに基づきます。
+    非公式速報ページです。
   </footer>
 
   <script src="./app.js"></script>
 </body>
-</html>
+      </html>
