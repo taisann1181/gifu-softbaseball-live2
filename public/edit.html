@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>速報編集ページ</title>
+  <title>1球速報 編集ページ</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <header class="topbar">
     <div>
       <p class="eyebrow">LIVE EDITOR</p>
-      <h1>速報編集ページ</h1>
-      <p class="sub">大会情報 → スタメン → 速報入力 の順で進みます。</p>
+      <h1>1球速報 編集ページ</h1>
+      <p class="sub">選択式で入力し、JSONをIssueコメントに貼り付けます。</p>
     </div>
 
     <div class="buttonRow">
@@ -20,10 +20,10 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="container editorContainer">
     <section class="panel">
       <h2>入力先の試合</h2>
-      <p class="help">JSONを貼り付ける試合番号を選択します。試合番号はGitHub Issue番号と同じです。</p>
+      <p class="help">試合番号はGitHub Issue番号と同じです。</p>
 
       <div class="gameMiniSelector">
         <span>試合番号</span>
@@ -32,48 +32,45 @@
       </div>
     </section>
 
-    <section class="panel stepPanel" id="step1">
+    <section class="panel">
       <p class="stepLabel">STEP 1</p>
       <h2>大会・試合情報</h2>
 
       <div class="formGrid">
         <label>大会名
-          <input id="matchTitle" placeholder="例：第74回岐阜県高等学校総合体育大会 軟式野球競技">
+          <input id="matchTitle" data-save placeholder="例：第74回岐阜県高等学校総合体育大会 軟式野球競技">
         </label>
 
         <label>日付
-          <input id="matchDate" type="date">
+          <input id="matchDate" data-save type="date">
         </label>
 
         <label>会場
-          <input id="matchVenue" placeholder="例：中津川公園野球場">
+          <input id="matchVenue" data-save placeholder="例：中津川公園野球場">
         </label>
 
         <label>試合名
-          <input id="matchRound" placeholder="例：準決勝 第2試合">
+          <input id="matchRound" data-save placeholder="例：準決勝 第2試合">
         </label>
 
         <label>先攻チーム
-          <input id="awayTeam" placeholder="例：県岐商" oninput="syncTeamNames()">
+          <input id="awayTeam" data-save placeholder="例：県岐商" oninput="syncTeamNames()">
         </label>
 
         <label>後攻チーム
-          <input id="homeTeam" placeholder="例：中京" oninput="syncTeamNames()">
+          <input id="homeTeam" data-save placeholder="例：中京" oninput="syncTeamNames()">
         </label>
       </div>
 
-      <div class="buttonRow">
-        <button class="button" type="button" onclick="makeMatchCommand()">大会・試合情報JSONを作る</button>
-        <button class="button secondary" type="button" onclick="nextStep()">次へ進む / スキップ</button>
-      </div>
+      <button class="button" type="button" onclick="makeMatchCommand()">大会・試合情報JSON</button>
     </section>
 
-    <section class="panel stepPanel" id="step2" hidden>
+    <section class="panel">
       <p class="stepLabel">STEP 2</p>
       <h2>スタメン</h2>
 
       <label>チーム
-        <select id="lineupTeam"></select>
+        <select id="lineupTeam" data-save></select>
       </label>
 
       <div id="lineupRows" class="lineupEditor"></div>
@@ -83,75 +80,210 @@
 
         <div class="lineupInputRow">
           <span>P.</span>
-          <input id="pitcherName" placeholder="投手名">
+          <input id="pitcherName" data-save placeholder="投手名">
           <select id="pitcherPosition" disabled>
             <option value="P">P</option>
           </select>
         </div>
       </div>
 
-      <div class="buttonRow">
-        <button class="button" type="button" onclick="makeLineupCommand()">スタメンJSONを作る</button>
-        <button class="button secondary" type="button" onclick="nextStep()">次へ進む / スキップ</button>
-      </div>
+      <button class="button" type="button" onclick="makeLineupCommand()">スタメンJSON</button>
     </section>
 
-    <section class="panel stepPanel" id="step3" hidden>
+    <section class="panel">
       <p class="stepLabel">STEP 3</p>
-      <h2>速報入力</h2>
+      <h2>打席開始</h2>
 
       <div class="formGrid">
         <label>回
-          <select id="eventInning"></select>
+          <select id="paInning" data-save></select>
         </label>
 
         <label>表/裏
-          <select id="eventHalf" onchange="syncTeamNames(); syncEventFields();">
+          <select id="paHalf" data-save onchange="syncTeamNames()">
             <option value="top">表</option>
             <option value="bottom">裏</option>
           </select>
         </label>
 
-        <label id="awayRunsBox"><span id="awayRunsLabel">先攻 得点</span>
-          <select id="awayRuns"></select>
+        <label>アウト数
+          <select id="paOuts" data-save></select>
         </label>
 
-        <label id="homeRunsBox"><span id="homeRunsLabel">後攻 得点</span>
-          <select id="homeRuns"></select>
+        <label>打者
+          <input id="paBatter" data-save placeholder="打者名">
         </label>
 
-        <label id="awayHitsBox"><span id="awayHitsLabel">先攻 安打</span>
-          <select id="awayHits"></select>
+        <label>投手
+          <input id="paPitcher" data-save placeholder="投手名">
         </label>
 
-        <label id="homeHitsBox"><span id="homeHitsLabel">後攻 安打</span>
-          <select id="homeHits"></select>
+        <label>一塁走者
+          <input id="paBase1" data-save placeholder="なしなら空欄">
         </label>
 
-        <label id="awayErrorsBox"><span id="awayErrorsLabel">先攻 失策</span>
-          <select id="awayErrors"></select>
+        <label>二塁走者
+          <input id="paBase2" data-save placeholder="なしなら空欄">
         </label>
 
-        <label id="homeErrorsBox"><span id="homeErrorsLabel">後攻 失策</span>
-          <select id="homeErrors"></select>
+        <label>三塁走者
+          <input id="paBase3" data-save placeholder="なしなら空欄">
         </label>
       </div>
 
-      <label class="checkLabel">
-        <input id="finalCheck" type="checkbox">
-        試合終了
-      </label>
+      <button class="button" type="button" onclick="makePaStartCommand()">打席開始JSON</button>
+    </section>
+
+    <section class="panel">
+      <p class="stepLabel">STEP 4</p>
+      <h2>1球入力</h2>
+
+      <div class="formGrid">
+        <label>球数
+          <select id="pitchNo" data-save></select>
+        </label>
+
+        <label>結果
+          <select id="pitchResult" data-save onchange="autoPitchText()"></select>
+        </label>
+
+        <label>細かい出来事
+          <select id="pitchDetail" data-save onchange="autoPitchText()"></select>
+        </label>
+
+        <label>球種
+          <select id="pitchType" data-save onchange="autoPitchText()"></select>
+        </label>
+
+        <label>コース
+          <select id="pitchCourse" data-save onchange="autoPitchText()"></select>
+        </label>
+
+        <label>高さ・ゾーン
+          <select id="pitchZone" data-save onchange="autoPitchText()"></select>
+        </label>
+
+        <label>球速
+          <select id="pitchSpeed" data-save></select>
+        </label>
+
+        <label>走者イベント
+          <select id="pitchRunnerEvent" data-save onchange="autoPitchText()"></select>
+        </label>
+
+        <label>ボール
+          <select id="pitchBall" data-save></select>
+        </label>
+
+        <label>ストライク
+          <select id="pitchStrike" data-save></select>
+        </label>
+      </div>
 
       <label>本文
-        <textarea id="eventText" rows="5" placeholder="例：1死二塁から中前適時打。"></textarea>
+        <textarea id="pitchText" data-save rows="4" placeholder="自動生成後に必要なら修正"></textarea>
       </label>
 
       <div class="buttonRow">
-        <button class="button" type="button" onclick="makeEventCommand()">速報JSONを作る</button>
+        <button class="button secondary" type="button" onclick="autoPitchText()">本文自動生成</button>
+        <button class="button" type="button" onclick="makePitchCommand()">1球JSON</button>
       </div>
     </section>
 
     <section class="panel">
+      <p class="stepLabel">STEP 5</p>
+      <h2>打席結果</h2>
+
+      <div class="formGrid">
+        <label>結果
+          <select id="paResult" data-save onchange="autoPaResultText()"></select>
+        </label>
+
+        <label>細かい出来事
+          <select id="paDetail" data-save onchange="autoPaResultText()"></select>
+        </label>
+
+        <label>打点
+          <select id="paRbi" data-save></select>
+        </label>
+
+        <label>打席後アウト数
+          <select id="paOutsEnd" data-save></select>
+        </label>
+
+        <label id="runsBox"><span id="runsLabel">攻撃側 得点</span>
+          <select id="paRuns" data-save></select>
+        </label>
+
+        <label id="hitsBox"><span id="hitsLabel">攻撃側 安打</span>
+          <select id="paHits" data-save></select>
+        </label>
+
+        <label id="errorsBox"><span id="errorsLabel">守備側 失策</span>
+          <select id="paErrors" data-save></select>
+        </label>
+
+        <label>一塁走者
+          <input id="resultBase1" data-save placeholder="なしなら空欄">
+        </label>
+
+        <label>二塁走者
+          <input id="resultBase2" data-save placeholder="なしなら空欄">
+        </label>
+
+        <label>三塁走者
+          <input id="resultBase3" data-save placeholder="なしなら空欄">
+        </label>
+      </div>
+
+      <label class="checkLabel">
+        <input id="finalCheck" data-save type="checkbox">
+        試合終了
+      </label>
+
+      <label>本文
+        <textarea id="paResultText" data-save rows="4" placeholder="自動生成後に必要なら修正"></textarea>
+      </label>
+
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="autoPaResultText()">本文自動生成</button>
+        <button class="button" type="button" onclick="makePaResultCommand()">打席結果JSON</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="stepLabel">OPTION</p>
+      <h2>細かい出来事・メモ</h2>
+
+      <div class="formGrid">
+        <label>回
+          <select id="noteInning" data-save></select>
+        </label>
+
+        <label>表/裏
+          <select id="noteHalf" data-save>
+            <option value="top">表</option>
+            <option value="bottom">裏</option>
+          </select>
+        </label>
+
+        <label>種類
+          <select id="noteCategory" data-save></select>
+        </label>
+
+        <label>対象チーム・選手
+          <input id="noteTarget" data-save placeholder="例：中京 投手交代">
+        </label>
+      </div>
+
+      <label>本文
+        <textarea id="noteText" data-save rows="4" placeholder="例：投手交代。西尾から田中へ。"></textarea>
+      </label>
+
+      <button class="button" type="button" onclick="makeNoteCommand()">出来事JSON</button>
+    </section>
+
+    <section class="panel outputPanel">
       <h2>コピーしてIssueに貼る</h2>
       <p class="help">生成したJSONをコピーし、選択した試合番号のIssueコメントに貼り付けます。</p>
 
@@ -167,20 +299,183 @@
   <script>
     const REPO_OWNER = "taisann1181";
     const REPO_NAME = "gifu-softbaseball-live2";
-    const EDIT_STORAGE_KEY = "gifu_softbaseball_editor_game_number";
+    const STORAGE_PREFIX = "one_pitch_editor_v1_";
 
-    let currentStep = 1;
     let currentGameNumber = 1;
     let currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/1#issuecomment-new`;
 
     const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
+
+    const pitchResults = [
+      "ボール",
+      "見逃し",
+      "空振り",
+      "ファウル",
+      "バントファウル",
+      "インプレー",
+      "死球",
+      "敬遠",
+      "牽制",
+      "盗塁",
+      "暴投",
+      "捕逸",
+      "ボーク",
+      "タイム"
+    ];
+
+    const pitchDetails = [
+      "",
+      "ストライク先行",
+      "フルカウント",
+      "粘る",
+      "高めに外れる",
+      "低めに外れる",
+      "内角を突く",
+      "外角いっぱい",
+      "空振りを奪う",
+      "ファウルで粘る",
+      "バント構え",
+      "走者スタート",
+      "投球前牽制",
+      "ワンバウンド",
+      "捕手好捕"
+    ];
+
+    const pitchTypes = [
+      "",
+      "ストレート",
+      "カーブ",
+      "スライダー",
+      "フォーク",
+      "チェンジアップ",
+      "シュート",
+      "ツーシーム",
+      "カットボール",
+      "スプリット",
+      "不明"
+    ];
+
+    const pitchCourses = [
+      "",
+      "内角",
+      "真ん中",
+      "外角",
+      "内角高め",
+      "内角低め",
+      "外角高め",
+      "外角低め",
+      "高め",
+      "低め"
+    ];
+
+    const pitchZones = [
+      "",
+      "ストライクゾーン",
+      "ボールゾーン",
+      "高め",
+      "低め",
+      "ワンバウンド",
+      "甘い球",
+      "厳しいコース"
+    ];
+
+    const runnerEvents = [
+      "",
+      "盗塁成功",
+      "盗塁失敗",
+      "牽制死",
+      "暴投で進塁",
+      "捕逸で進塁",
+      "ボークで進塁",
+      "走者帰塁",
+      "走者スタート",
+      "重盗"
+    ];
+
+    const paResults = [
+      "",
+      "空振り三振",
+      "見逃し三振",
+      "四球",
+      "死球",
+      "投ゴロ",
+      "捕ゴロ",
+      "一ゴロ",
+      "二ゴロ",
+      "三ゴロ",
+      "遊ゴロ",
+      "左飛",
+      "中飛",
+      "右飛",
+      "左安",
+      "中安",
+      "右安",
+      "内野安打",
+      "二塁打",
+      "三塁打",
+      "本塁打",
+      "犠打",
+      "犠飛",
+      "スクイズ",
+      "失策出塁",
+      "野選",
+      "併殺",
+      "走塁死",
+      "守備妨害",
+      "打撃妨害"
+    ];
+
+    const paDetails = [
+      "",
+      "先制",
+      "同点",
+      "勝ち越し",
+      "逆転",
+      "追加点",
+      "タイムリー",
+      "満塁",
+      "送りバント成功",
+      "スクイズ成功",
+      "犠飛で得点",
+      "進塁打",
+      "好守",
+      "失策絡み",
+      "併殺崩れ",
+      "走者生還",
+      "走者進塁",
+      "三者凡退",
+      "攻守交代"
+    ];
+
+    const noteCategories = [
+      "投手交代",
+      "代打",
+      "代走",
+      "守備交代",
+      "守備位置変更",
+      "攻守交代",
+      "タイム",
+      "中断",
+      "再開",
+      "治療",
+      "審判協議",
+      "グラウンド整備",
+      "その他"
+    ];
 
     function el(id) {
       return document.getElementById(id);
     }
 
     function value(id) {
-      return el(id).value;
+      const target = el(id);
+      if (!target) return "";
+
+      if (target.type === "checkbox") {
+        return target.checked;
+      }
+
+      return target.value;
     }
 
     function num(id) {
@@ -191,23 +486,27 @@
       return `<option value="${value}">${label}</option>`;
     }
 
-    function syncIssueUrl() {
-      currentGameNumber = Number(value("issueNumber")) || 1;
-      currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/${currentGameNumber}#issuecomment-new`;
-      localStorage.setItem(EDIT_STORAGE_KEY, String(currentGameNumber));
+    function fillSelect(id, values) {
+      el(id).innerHTML = values.map((v) => optionHtml(v, v || "選択")).join("");
     }
 
-    function fillNumberSelect(id, max) {
-      el(id).innerHTML = Array.from({ length: max + 1 }, (_, i) => {
-        return optionHtml(i, String(i));
-      }).join("");
+    function fillNumberSelect(id, max, start = 0) {
+      const values = [];
+      for (let i = start; i <= max; i++) values.push(i);
+      el(id).innerHTML = values.map((v) => optionHtml(v, String(v))).join("");
     }
 
-    function fillInningSelect() {
-      el("eventInning").innerHTML = Array.from({ length: 20 }, (_, i) => {
+    function fillInningSelect(id) {
+      el(id).innerHTML = Array.from({ length: 20 }, (_, i) => {
         const inning = i + 1;
         return optionHtml(inning, `${inning}回`);
       }).join("");
+    }
+
+    function syncIssueUrl() {
+      currentGameNumber = Number(value("issueNumber")) || 1;
+      currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/${currentGameNumber}#issuecomment-new`;
+      localStorage.setItem(`${STORAGE_PREFIX}game_number`, String(currentGameNumber));
     }
 
     function fillLineupTeamSelect() {
@@ -225,7 +524,7 @@
 
     function positionSelectHtml(id) {
       return `
-        <select id="${id}" onchange="checkDh()">
+        <select id="${id}" data-save onchange="checkDh(); saveFormValue(this);">
           ${positions.map((p) => optionHtml(p, p || "選択")).join("")}
         </select>
       `;
@@ -238,7 +537,7 @@
         rows.push(`
           <div class="lineupInputRow">
             <span>${i}.</span>
-            <input id="playerName${i}" placeholder="名前">
+            <input id="playerName${i}" data-save placeholder="名前">
             ${positionSelectHtml(`playerPos${i}`)}
           </div>
         `);
@@ -258,60 +557,26 @@
     function syncTeamNames() {
       const away = value("awayTeam") || "先攻";
       const home = value("homeTeam") || "後攻";
+      const half = value("paHalf") || "top";
 
       fillLineupTeamSelect();
 
-      el("awayRunsLabel").textContent = `${away} 得点`;
-      el("homeRunsLabel").textContent = `${home} 得点`;
-      el("awayHitsLabel").textContent = `${away} 安打`;
-      el("homeHitsLabel").textContent = `${home} 安打`;
-      el("awayErrorsLabel").textContent = `${away} 失策`;
-      el("homeErrorsLabel").textContent = `${home} 失策`;
+      const attack = half === "top" ? away : home;
+      const defense = half === "top" ? home : away;
 
-      syncEventFields();
+      el("runsLabel").textContent = `${attack} 得点`;
+      el("hitsLabel").textContent = `${attack} 安打`;
+      el("errorsLabel").textContent = `${defense} 失策`;
     }
 
-    function syncEventFields() {
-      const half = value("eventHalf");
+    function baseText(prefix) {
+      const bases = [];
 
-      const topOnly = [
-        "awayRunsBox",
-        "awayHitsBox",
-        "homeErrorsBox"
-      ];
+      if (value(`${prefix}Base1`)) bases.push(`一塁:${value(`${prefix}Base1`)}`);
+      if (value(`${prefix}Base2`)) bases.push(`二塁:${value(`${prefix}Base2`)}`);
+      if (value(`${prefix}Base3`)) bases.push(`三塁:${value(`${prefix}Base3`)}`);
 
-      const bottomOnly = [
-        "homeRunsBox",
-        "homeHitsBox",
-        "awayErrorsBox"
-      ];
-
-      if (half === "top") {
-        topOnly.forEach((id) => {
-          el(id).hidden = false;
-        });
-
-        bottomOnly.forEach((id) => {
-          el(id).hidden = true;
-        });
-      } else {
-        topOnly.forEach((id) => {
-          el(id).hidden = true;
-        });
-
-        bottomOnly.forEach((id) => {
-          el(id).hidden = false;
-        });
-      }
-    }
-
-    function nextStep() {
-      el(`step${currentStep}`).hidden = true;
-      currentStep = Math.min(3, currentStep + 1);
-      el(`step${currentStep}`).hidden = false;
-
-      syncTeamNames();
-      syncEventFields();
+      return bases.length ? bases.join("、") : "走者なし";
     }
 
     function wrap(obj) {
@@ -368,36 +633,99 @@
       });
     }
 
-    function makeEventCommand() {
-      const half = value("eventHalf");
+    function makePaStartCommand() {
+      wrap({
+        type: "pa_start",
+        inning: num("paInning"),
+        half: value("paHalf"),
+        outs: num("paOuts"),
+        batter: value("paBatter"),
+        pitcher: value("paPitcher"),
+        base1: value("paBase1"),
+        base2: value("paBase2"),
+        base3: value("paBase3")
+      });
+    }
 
-      const command = {
-        type: "event",
-        inning: num("eventInning"),
-        half,
-        awayRuns: 0,
-        homeRuns: 0,
-        awayHits: 0,
-        homeHits: 0,
-        awayErrors: 0,
-        homeErrors: 0,
-        final: el("finalCheck").checked,
-        text: value("eventText")
-      };
+    function autoPitchText() {
+      const pieces = [
+        value("pitchCourse"),
+        value("pitchZone"),
+        value("pitchType"),
+        value("pitchResult"),
+        value("pitchDetail"),
+        value("pitchRunnerEvent")
+      ].filter(Boolean);
 
-      if (half === "top") {
-        command.awayRuns = num("awayRuns");
-        command.awayHits = num("awayHits");
-        command.homeErrors = num("homeErrors");
-      }
+      el("pitchText").value = pieces.join(" / ");
+      saveFormValue(el("pitchText"));
+    }
 
-      if (half === "bottom") {
-        command.homeRuns = num("homeRuns");
-        command.homeHits = num("homeHits");
-        command.awayErrors = num("awayErrors");
-      }
+    function makePitchCommand() {
+      wrap({
+        type: "pitch",
+        pitchNo: num("pitchNo"),
+        result: value("pitchResult"),
+        detail: value("pitchDetail"),
+        pitchType: value("pitchType"),
+        speed: value("pitchSpeed"),
+        course: value("pitchCourse"),
+        zone: value("pitchZone"),
+        runnerEvent: value("pitchRunnerEvent"),
+        ball: num("pitchBall"),
+        strike: num("pitchStrike"),
+        text: value("pitchText")
+      });
+    }
 
-      wrap(command);
+    function autoPaResultText() {
+      const result = value("paResult");
+      const detail = value("paDetail");
+      const runs = num("paRuns");
+      const rbi = num("paRbi");
+      const bases = baseText("result");
+
+      const parts = [];
+
+      if (result) parts.push(result);
+      if (detail) parts.push(detail);
+      if (runs > 0) parts.push(`${runs}点`);
+      if (rbi > 0) parts.push(`${rbi}打点`);
+      parts.push(`打席後：${num("paOutsEnd")}アウト、${bases}`);
+
+      el("paResultText").value = parts.join(" / ");
+      saveFormValue(el("paResultText"));
+    }
+
+    function makePaResultCommand() {
+      wrap({
+        type: "pa_result",
+        inning: num("paInning"),
+        half: value("paHalf"),
+        result: value("paResult"),
+        detail: value("paDetail"),
+        outs: num("paOutsEnd"),
+        runs: num("paRuns"),
+        hits: num("paHits"),
+        errors: num("paErrors"),
+        rbi: num("paRbi"),
+        base1: value("resultBase1"),
+        base2: value("resultBase2"),
+        base3: value("resultBase3"),
+        final: value("finalCheck"),
+        text: value("paResultText")
+      });
+    }
+
+    function makeNoteCommand() {
+      wrap({
+        type: "note",
+        inning: num("noteInning"),
+        half: value("noteHalf"),
+        category: value("noteCategory"),
+        target: value("noteTarget"),
+        text: [value("noteTarget"), value("noteText")].filter(Boolean).join(" / ")
+      });
     }
 
     async function copyOutput() {
@@ -419,82 +747,103 @@
 
     function openNewGameIssue() {
       const title = encodeURIComponent("速報入力 新しい試合");
-      const body = encodeURIComponent("edit.htmlで作成したJSONを、このIssueのコメントに貼り付けてください。");
+      const body = encodeURIComponent("このIssueのコメントに、edit.htmlで作成したJSONを貼り付けてください。");
       const url = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new?title=${title}&body=${body}`;
 
       window.open(url, "_blank", "noreferrer");
     }
 
-    async function loadDefaultGameNumber() {
-      const saved = Number(localStorage.getItem(EDIT_STORAGE_KEY) || 0);
+    function saveFormValue(target) {
+      if (!target.id || !target.hasAttribute("data-save")) return;
 
-      if (Number.isFinite(saved) && saved > 0) {
-        el("issueNumber").value = String(saved);
-        syncIssueUrl();
-        return;
-      }
+      const key = `${STORAGE_PREFIX}${target.id}`;
 
-      try {
-        const res = await fetch("./data/current.json?ts=" + Date.now(), {
-          cache: "no-store"
-        });
-
-        if (!res.ok) {
-          el("issueNumber").value = "1";
-          syncIssueUrl();
-          return;
-        }
-
-        const data = await res.json();
-        const gameNumber = Number(data.issue_number || 1);
-
-        el("issueNumber").value = String(gameNumber);
-        syncIssueUrl();
-      } catch {
-        el("issueNumber").value = "1";
-        syncIssueUrl();
+      if (target.type === "checkbox") {
+        localStorage.setItem(key, target.checked ? "1" : "0");
+      } else {
+        localStorage.setItem(key, target.value);
       }
     }
 
-    function setupIssueNumberInput() {
-      const input = el("issueNumber");
+    function restoreFormValues() {
+      document.querySelectorAll("[data-save]").forEach((target) => {
+        const key = `${STORAGE_PREFIX}${target.id}`;
+        const saved = localStorage.getItem(key);
 
-      input.addEventListener("change", () => {
-        syncIssueUrl();
+        if (saved === null) return;
+
+        if (target.type === "checkbox") {
+          target.checked = saved === "1";
+        } else {
+          target.value = saved;
+        }
+      });
+    }
+
+    function setupAutoSave() {
+      document.addEventListener("input", (event) => {
+        saveFormValue(event.target);
       });
 
-      input.addEventListener("keydown", (event) => {
+      document.addEventListener("change", (event) => {
+        saveFormValue(event.target);
+      });
+    }
+
+    function initControls() {
+      fillInningSelect("paInning");
+      fillInningSelect("noteInning");
+      
+      fillNumberSelect("issueNumber", 300, 1);
+      fillNumberSelect("paOuts", 2);
+      fillNumberSelect("paOutsEnd", 3);
+      fillNumberSelect("pitchNo", 30, 1);
+      fillNumberSelect("pitchBall", 3);
+      fillNumberSelect("pitchStrike", 2);
+      fillNumberSelect("pitchSpeed", 160);
+      fillNumberSelect("paRuns", 20);
+      fillNumberSelect("paHits", 20);
+      fillNumberSelect("paErrors", 20);
+      fillNumberSelect("paRbi", 4);
+      
+      fillSelect("pitchResult", pitchResults);
+      fillSelect("pitchDetail", pitchDetails);
+      fillSelect("pitchType", pitchTypes);
+      fillSelect("pitchCourse", pitchCourses);
+      fillSelect("pitchZone", pitchZones);
+      fillSelect("pitchRunnerEvent", runnerEvents);
+      fillSelect("paResult", paResults);
+      fillSelect("paDetail", paDetails);
+      fillSelect("noteCategory", noteCategories);
+      
+      buildLineupRows();
+    }
+    
+    function init() { 
+      initControls();
+      setupAutoSave();
+      restoreFormValues();
+      
+      const savedGame = Number(localStorage.getItem(`${STORAGE_PREFIX}game_number`) || 1);
+      el("issueNumber").value = savedGame > 0 ? String(savedGame) : "1";
+      
+      el("issueNumber").addEventListener("change", syncIssueUrl);
+      el("issueNumber").addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
           syncIssueUrl();
-          input.blur();
+          event.target.blur();
         }
       });
-    }
-
-    function init() {
-      setupIssueNumberInput();
-      loadDefaultGameNumber();
-
-      fillInningSelect();
-
-      [
-        "awayRuns",
-        "homeRuns",
-        "awayHits",
-        "homeHits",
-        "awayErrors",
-        "homeErrors"
-      ].forEach((id) => {
-        fillNumberSelect(id, 20);
-      });
-
-      buildLineupRows();
+      
+      el("paHalf").addEventListener("change", syncTeamNames);
+      
+      syncIssueUrl();
       syncTeamNames();
-      syncEventFields();
+      checkDh();
     }
-
+    
     init();
   </script>
 </body>
-  </html>
+</html> 
