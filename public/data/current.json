@@ -15,6 +15,20 @@
   },
   "status": "試合前",
   "isFinal": false,
+  "currentState": {
+    "inningLabel": "",
+    "attackTeam": "",
+    "batter": "",
+    "pitcher": "",
+    "ball": 0,
+    "strike": 0,
+    "outs": 0,
+    "bases": {
+      "first": "",
+      "second": "",
+      "third": ""
+    }
+  },
   "lineScore": {
     "innings": [1, 2, 3, 4, 5, 6, 7, 8, 9],
     "away": {
@@ -36,5 +50,7 @@
     "away": [],
     "home": []
   },
-  "events": []
+  "atBats": [],
+  "notes": [],
+  "timeline": []
 }
