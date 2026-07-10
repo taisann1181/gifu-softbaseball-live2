@@ -11,24 +11,42 @@
     <div>
       <p class="eyebrow">LIVE EDITOR</p>
       <h1>1球速報 編集ページ</h1>
-      <p class="sub">選択式で入力し、JSONをIssueコメントに貼り付けます。</p>
+      <p class="sub">選択式で入力し、Cloudflare D1へ直接送信します。</p>
     </div>
 
     <div class="buttonRow">
       <a class="editLink" href="./index.html">閲覧ページ</a>
-      <button class="editLink" type="button" onclick="openNewGameIssue()">新しく試合をつくる</button>
     </div>
   </header>
 
   <main class="container editorContainer">
     <section class="panel">
-      <h2>入力先の試合</h2>
-      <p class="help">試合番号はGitHub Issue番号と同じです。</p>
+      <h2>編集認証</h2>
+      <p class="help">Cloudflare Workerに設定した編集用パスワードを入力します。</p>
+
+      <label>編集用パスワード
+        <input id="editorPassword" type="password" placeholder="EDITOR_PASSWORD">
+      </label>
+
+      <label class="checkLabel">
+        <input id="rememberPassword" type="checkbox">
+        この端末に一時保存する
+      </label>
+
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="saveEditorPassword()">パスワード保存</button>
+        <button class="button secondary" type="button" onclick="clearEditorPassword()">パスワード削除</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>試合番号</h2>
+      <p class="help">Issue番号ではありません。D1上の試合番号です。新しい試合は未使用の番号を入れるだけで作れます。</p>
 
       <div class="gameMiniSelector">
         <span>試合番号</span>
-        <input id="issueNumber" type="number" min="1" inputmode="numeric" placeholder="1">
-        <button type="button" onclick="openCurrentIssue()">開く</button>
+        <input id="gameNumber" data-save type="number" min="1" inputmode="numeric" placeholder="1">
+        <button type="button" onclick="openViewPage()">見る</button>
       </div>
     </section>
 
@@ -62,7 +80,10 @@
         </label>
       </div>
 
-      <button class="button" type="button" onclick="makeMatchCommand()">大会・試合情報JSON</button>
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="makeMatchCommand()">送信内容を作る</button>
+        <button class="button" type="button" onclick="makeAndSendMatch()">すぐ送信</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -87,7 +108,10 @@
         </div>
       </div>
 
-      <button class="button" type="button" onclick="makeLineupCommand()">スタメンJSON</button>
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="makeLineupCommand()">送信内容を作る</button>
+        <button class="button" type="button" onclick="makeAndSendLineup()">すぐ送信</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -131,7 +155,10 @@
         </label>
       </div>
 
-      <button class="button" type="button" onclick="makePaStartCommand()">打席開始JSON</button>
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="makePaStartCommand()">送信内容を作る</button>
+        <button class="button" type="button" onclick="makeAndSendPaStart()">すぐ送信</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -186,7 +213,8 @@
 
       <div class="buttonRow">
         <button class="button secondary" type="button" onclick="autoPitchText()">本文自動生成</button>
-        <button class="button" type="button" onclick="makePitchCommand()">1球JSON</button>
+        <button class="button secondary" type="button" onclick="makePitchCommand()">送信内容を作る</button>
+        <button class="button" type="button" onclick="makeAndSendPitch()">すぐ送信</button>
       </div>
     </section>
 
@@ -211,15 +239,15 @@
           <select id="paOutsEnd" data-save></select>
         </label>
 
-        <label id="runsBox"><span id="runsLabel">攻撃側 得点</span>
+        <label><span id="runsLabel">攻撃側 得点</span>
           <select id="paRuns" data-save></select>
         </label>
 
-        <label id="hitsBox"><span id="hitsLabel">攻撃側 安打</span>
+        <label><span id="hitsLabel">攻撃側 安打</span>
           <select id="paHits" data-save></select>
         </label>
 
-        <label id="errorsBox"><span id="errorsLabel">守備側 失策</span>
+        <label><span id="errorsLabel">守備側 失策</span>
           <select id="paErrors" data-save></select>
         </label>
 
@@ -247,7 +275,8 @@
 
       <div class="buttonRow">
         <button class="button secondary" type="button" onclick="autoPaResultText()">本文自動生成</button>
-        <button class="button" type="button" onclick="makePaResultCommand()">打席結果JSON</button>
+        <button class="button secondary" type="button" onclick="makePaResultCommand()">送信内容を作る</button>
+        <button class="button" type="button" onclick="makeAndSendPaResult()">すぐ送信</button>
       </div>
     </section>
 
@@ -277,32 +306,38 @@
       </div>
 
       <label>本文
-        <textarea id="noteText" data-save rows="4" placeholder="例：投手交代。西尾から田中へ。"></textarea>
+        <textarea id="noteText" data-save rows="4" placeholder="例：投手交代。佐藤から田中へ。"></textarea>
       </label>
 
-      <button class="button" type="button" onclick="makeNoteCommand()">出来事JSON</button>
+      <div class="buttonRow">
+        <button class="button secondary" type="button" onclick="makeNoteCommand()">送信内容を作る</button>
+        <button class="button" type="button" onclick="makeAndSendNote()">すぐ送信</button>
+      </div>
     </section>
 
     <section class="panel outputPanel">
-      <h2>コピーしてIssueに貼る</h2>
-      <p class="help">生成したJSONをコピーし、選択した試合番号のIssueコメントに貼り付けます。</p>
+      <h2>送信内容プレビュー</h2>
+      <p class="help">確認用です。手でコピーする必要はありません。</p>
 
-      <textarea id="output" rows="12" readonly></textarea>
+      <textarea id="output" rows="10" readonly></textarea>
 
       <div class="buttonRow">
-        <button class="button" type="button" onclick="copyOutput()">コピー</button>
-        <button class="button secondary" type="button" onclick="openCurrentIssue()">選択した試合を開く</button>
+        <button class="button" type="button" onclick="sendLatestCommand()">この内容を送信</button>
+        <button class="button secondary" type="button" onclick="openViewPage()">閲覧ページで確認</button>
       </div>
+
+      <p id="sendStatus" class="help"></p>
     </section>
   </main>
 
-  <script>
-    const REPO_OWNER = "taisann1181";
-    const REPO_NAME = "gifu-softbaseball-live2";
-    const STORAGE_PREFIX = "one_pitch_editor_v1_";
+  <script src="./config.js"></script>
 
-    let currentGameNumber = 1;
-    let currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/1#issuecomment-new`;
+  <script>
+    const API_BASE = window.LIVE_API_BASE;
+    const STORAGE_PREFIX = "one_pitch_editor_d1_v1_";
+    const PASSWORD_KEY = "one_pitch_editor_password_v1";
+
+    let latestCommand = null;
 
     const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
 
@@ -492,8 +527,22 @@
 
     function fillNumberSelect(id, max, start = 0) {
       const values = [];
-      for (let i = start; i <= max; i++) values.push(i);
+
+      for (let i = start; i <= max; i++) {
+        values.push(i);
+      }
+
       el(id).innerHTML = values.map((v) => optionHtml(v, String(v))).join("");
+    }
+
+    function fillSpeedSelect(id) {
+      const values = [""];
+
+      for (let i = 80; i <= 160; i++) {
+        values.push(i);
+      }
+
+      el(id).innerHTML = values.map((v) => optionHtml(v, v === "" ? "未入力" : String(v))).join("");
     }
 
     function fillInningSelect(id) {
@@ -501,12 +550,6 @@
         const inning = i + 1;
         return optionHtml(inning, `${inning}回`);
       }).join("");
-    }
-
-    function syncIssueUrl() {
-      currentGameNumber = Number(value("issueNumber")) || 1;
-      currentIssueUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/${currentGameNumber}#issuecomment-new`;
-      localStorage.setItem(`${STORAGE_PREFIX}game_number`, String(currentGameNumber));
     }
 
     function fillLineupTeamSelect() {
@@ -569,25 +612,134 @@
       el("errorsLabel").textContent = `${defense} 失策`;
     }
 
-    function baseText(prefix) {
+    function resultBaseText() {
       const bases = [];
 
-      if (value(`${prefix}Base1`)) bases.push(`一塁:${value(`${prefix}Base1`)}`);
-      if (value(`${prefix}Base2`)) bases.push(`二塁:${value(`${prefix}Base2`)}`);
-      if (value(`${prefix}Base3`)) bases.push(`三塁:${value(`${prefix}Base3`)}`);
+      if (value("resultBase1")) bases.push(`一塁:${value("resultBase1")}`);
+      if (value("resultBase2")) bases.push(`二塁:${value("resultBase2")}`);
+      if (value("resultBase3")) bases.push(`三塁:${value("resultBase3")}`);
 
       return bases.length ? bases.join("、") : "走者なし";
     }
 
-    function wrap(obj) {
-      el("output").value =
-        "```livejson\n" + JSON.stringify(obj, null, 2) + "\n```";
+    function setStatus(text) {
+      el("sendStatus").textContent = text;
+    }
+
+    function showOutput(obj) {
+      latestCommand = obj;
+      el("output").value = JSON.stringify(obj, null, 2);
+      setStatus("送信内容を作成しました。");
+      return obj;
+    }
+
+    function getGameNumber() {
+      const n = Number(value("gameNumber") || 1);
+      return Number.isFinite(n) && n > 0 ? n : 1;
+    }
+
+    function saveEditorPassword() {
+      const password = value("editorPassword");
+
+      if (!password) {
+        alert("パスワードを入力してください。");
+        return;
+      }
+
+      if (el("rememberPassword").checked) {
+        localStorage.setItem(PASSWORD_KEY, password);
+        alert("この端末に保存しました。共有PCではあとで削除してください。");
+      } else {
+        sessionStorage.setItem(PASSWORD_KEY, password);
+        alert("このタブだけに保存しました。");
+      }
+    }
+
+    function clearEditorPassword() {
+      localStorage.removeItem(PASSWORD_KEY);
+      sessionStorage.removeItem(PASSWORD_KEY);
+      el("editorPassword").value = "";
+      alert("保存済みパスワードを削除しました。");
+    }
+
+    function getEditorPassword() {
+      return (
+        value("editorPassword") ||
+        sessionStorage.getItem(PASSWORD_KEY) ||
+        localStorage.getItem(PASSWORD_KEY) ||
+        ""
+      );
+    }
+
+    async function sendCommand(command) {
+      if (!API_BASE) {
+        alert("config.js の LIVE_API_BASE が設定されていません。");
+        return;
+      }
+
+      const password = getEditorPassword();
+
+      if (!password) {
+        alert("編集用パスワードを入力してください。");
+        return;
+      }
+
+      const gameNumber = getGameNumber();
+
+      setStatus("送信中...");
+
+      const res = await fetch(`${API_BASE}/api/games/${gameNumber}/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${password}`
+        },
+        body: JSON.stringify(command)
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error(data);
+        setStatus("送信失敗");
+        alert(data.error || "送信に失敗しました。");
+        return;
+      }
+
+      setStatus(`送信成功：${command.type} / 試合 #${gameNumber}`);
+      afterSuccessfulSend(command);
+    }
+
+    async function sendLatestCommand() {
+      if (!latestCommand) {
+        alert("先に送信内容を作ってください。");
+        return;
+      }
+
+      await sendCommand(latestCommand);
+    }
+
+    function afterSuccessfulSend(command) {
+      if (command.type === "pitch") {
+        const next = Math.min(num("pitchNo") + 1, 30);
+        el("pitchNo").value = String(next);
+        saveFormValue(el("pitchNo"));
+      }
+
+      if (command.type === "pa_result") {
+        el("pitchNo").value = "1";
+        el("pitchBall").value = "0";
+        el("pitchStrike").value = "0";
+        el("pitchText").value = "";
+        saveFormValue(el("pitchNo"));
+        saveFormValue(el("pitchBall"));
+        saveFormValue(el("pitchStrike"));
+        saveFormValue(el("pitchText"));
+      }
     }
 
     function makeMatchCommand() {
-      syncTeamNames();
-
-      wrap({
+      return showOutput({
         type: "match",
         title: value("matchTitle"),
         date: value("matchDate"),
@@ -596,6 +748,10 @@
         awayTeam: value("awayTeam"),
         homeTeam: value("homeTeam")
       });
+    }
+
+    async function makeAndSendMatch() {
+      await sendCommand(makeMatchCommand());
     }
 
     function makeLineupCommand() {
@@ -626,15 +782,19 @@
         }
       }
 
-      wrap({
+      return showOutput({
         type: "lineup",
         team: value("lineupTeam"),
         players
       });
     }
 
+    async function makeAndSendLineup() {
+      await sendCommand(makeLineupCommand());
+    }
+
     function makePaStartCommand() {
-      wrap({
+      return showOutput({
         type: "pa_start",
         inning: num("paInning"),
         half: value("paHalf"),
@@ -647,6 +807,10 @@
       });
     }
 
+    async function makeAndSendPaStart() {
+      await sendCommand(makePaStartCommand());
+    }
+
     function autoPitchText() {
       const pieces = [
         value("pitchCourse"),
@@ -654,15 +818,15 @@
         value("pitchType"),
         value("pitchResult"),
         value("pitchDetail"),
-        value("pitchRunnerEvent")
+        value("pitchRunner Event")
       ].filter(Boolean);
-
+      
       el("pitchText").value = pieces.join(" / ");
       saveFormValue(el("pitchText"));
     }
-
+    
     function makePitchCommand() {
-      wrap({
+      return showOutput({
         type: "pitch",
         pitchNo: num("pitchNo"),
         result: value("pitchResult"),
@@ -671,180 +835,100 @@
         speed: value("pitchSpeed"),
         course: value("pitchCourse"),
         zone: value("pitchZone"),
-        runnerEvent: value("pitchRunnerEvent"),
+        runnerEvent: value("pitchRunner Event"),
         ball: num("pitchBall"),
         strike: num("pitchStrike"),
         text: value("pitchText")
       });
     }
 
+    async function makeAndSendPitch() {
+      await sendCommand(makePitchCommand());
+    }
+    
     function autoPaResultText() {
       const result = value("paResult");
-      const detail = value("paDetail");
+      const detail = value ("paDetail");
       const runs = num("paRuns");
       const rbi = num("paRbi");
-      const bases = baseText("result");
-
+      const bases = resultBaseText();
+      
       const parts = [];
-
+      
       if (result) parts.push(result);
       if (detail) parts.push(detail);
       if (runs > 0) parts.push(`${runs}点`);
       if (rbi > 0) parts.push(`${rbi}打点`);
-      parts.push(`打席後：${num("paOutsEnd")}アウト、${bases}`);
-
+      parts.push(`打席後:${num("pa0utsEnd")}アウト、${bases}`);
+      
       el("paResultText").value = parts.join(" / ");
       saveFormValue(el("paResultText"));
     }
-
-    function makePaResultCommand() {
-      wrap({
+    
+    function makePaResult Command() {
+      return showOutput({
         type: "pa_result",
         inning: num("paInning"),
         half: value("paHalf"),
         result: value("paResult"),
         detail: value("paDetail"),
-        outs: num("paOutsEnd"),
+        outs: num("pa0utsEnd"),
         runs: num("paRuns"),
         hits: num("paHits"),
         errors: num("paErrors"),
-        rbi: num("paRbi"),
+        rbi; num("paRbi"),
         base1: value("resultBase1"),
         base2: value("resultBase2"),
         base3: value("resultBase3"),
         final: value("finalCheck"),
         text: value("paResultText")
-      });
-    }
+    });
+  }
 
-    function makeNoteCommand() {
-      wrap({
-        type: "note",
-        inning: num("noteInning"),
-        half: value("noteHalf"),
-        category: value("noteCategory"),
-        target: value("noteTarget"),
-        text: [value("noteTarget"), value("noteText")].filter(Boolean).join(" / ")
-      });
-    }
+async function makeAndSendPaResult()
 
-    async function copyOutput() {
-      const text = el("output").value;
+await
 
-      if (!text.trim()) {
-        alert("先にJSONを作成してください。");
-        return;
-      }
+sendCommand(make PaResult Command()); }
 
-      await navigator.clipboard.writeText(text);
-      alert(`コピーしました。試合 #${currentGameNumber} のIssueコメントに貼り付けてください。`);
-    }
+function makeNoteCommand() {
 
-    function openCurrentIssue() {
-      syncIssueUrl();
-      window.open(currentIssueUrl, "_blank", "noreferrer");
-    }
+return showOutput({
 
-    function openNewGameIssue() {
-      const title = encodeURIComponent("速報入力 新しい試合");
-      const body = encodeURIComponent("このIssueのコメントに、edit.htmlで作成したJSONを貼り付けてください。");
-      const url = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new?title=${title}&body=${body}`;
+type: "note",
 
-      window.open(url, "_blank", "noreferrer");
-    }
+inning: num("noteInning"),
 
-    function saveFormValue(target) {
-      if (!target.id || !target.hasAttribute("data-save")) return;
+half: value("noteHalf"),
 
-      const key = `${STORAGE_PREFIX}${target.id}`;
+category: value("noteCategory"),
 
-      if (target.type === "checkbox") {
-        localStorage.setItem(key, target.checked ? "1" : "0");
-      } else {
-        localStorage.setItem(key, target.value);
-      }
-    }
+target: value("noteTarget"),
 
-    function restoreFormValues() {
-      document.querySelectorAll("[data-save]").forEach((target) => {
-        const key = `${STORAGE_PREFIX}${target.id}`;
-        const saved = localStorage.getItem(key);
+text: [value("noteTarget"),
 
-        if (saved === null) return;
+value("noteText")].filter(Boolean).join( " / ")
 
-        if (target.type === "checkbox") {
-          target.checked = saved === "1";
-        } else {
-          target.value = saved;
-        }
-      });
-    }
+});
 
-    function setupAutoSave() {
-      document.addEventListener("input", (event) => {
-        saveFormValue(event.target);
-      });
+}
 
-      document.addEventListener("change", (event) => {
-        saveFormValue(event.target);
-      });
-    }
+async function makeAndSendNote() {
 
-    function initControls() {
-      fillInningSelect("paInning");
-      fillInningSelect("noteInning");
-      
-      fillNumberSelect("issueNumber", 300, 1);
-      fillNumberSelect("paOuts", 2);
-      fillNumberSelect("paOutsEnd", 3);
-      fillNumberSelect("pitchNo", 30, 1);
-      fillNumberSelect("pitchBall", 3);
-      fillNumberSelect("pitchStrike", 2);
-      fillNumberSelect("pitchSpeed", 160);
-      fillNumberSelect("paRuns", 20);
-      fillNumberSelect("paHits", 20);
-      fillNumberSelect("paErrors", 20);
-      fillNumberSelect("paRbi", 4);
-      
-      fillSelect("pitchResult", pitchResults);
-      fillSelect("pitchDetail", pitchDetails);
-      fillSelect("pitchType", pitchTypes);
-      fillSelect("pitchCourse", pitchCourses);
-      fillSelect("pitchZone", pitchZones);
-      fillSelect("pitchRunnerEvent", runnerEvents);
-      fillSelect("paResult", paResults);
-      fillSelect("paDetail", paDetails);
-      fillSelect("noteCategory", noteCategories);
-      
-      buildLineupRows();
-    }
-    
-    function init() { 
-      initControls();
-      setupAutoSave();
-      restoreFormValues();
-      
-      const savedGame = Number(localStorage.getItem(`${STORAGE_PREFIX}game_number`) || 1);
-      el("issueNumber").value = savedGame > 0 ? String(savedGame) : "1";
-      
-      el("issueNumber").addEventListener("change", syncIssueUrl);
-      el("issueNumber").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          syncIssueUrl();
-          event.target.blur();
-        }
-      });
-      
-      el("paHalf").addEventListener("change", syncTeamNames);
-      
-      syncIssueUrl();
-      syncTeamNames();
-      checkDh();
-    }
-    
-    init();
-  <script src="./config.js"></script>
-  </script>
-</body>
-</html> 
+await
+
+sendCommand(makeNoteCommand()); }
+
+function openViewPage() {
+
+const gameNumber =
+
+getGameNumber();
+
+window.open(`./index.html?game=$ }
+
+{gameNumber}`, "_blank");
+
+function save FormValue (target) {
+
+if (!target || ! target.id || !
