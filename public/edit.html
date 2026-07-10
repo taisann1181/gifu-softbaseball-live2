@@ -339,8 +339,7 @@
 
     let latestCommand = null;
 
-    const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
-
+        const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
     const pitchResults = [
       "ボール",
       "見逃し",
@@ -818,13 +817,13 @@
         value("pitchType"),
         value("pitchResult"),
         value("pitchDetail"),
-        value("pitchRunner Event")
+        value("pitchRunnerEvent")
       ].filter(Boolean);
-      
+
       el("pitchText").value = pieces.join(" / ");
       saveFormValue(el("pitchText"));
     }
-    
+
     function makePitchCommand() {
       return showOutput({
         type: "pitch",
@@ -835,7 +834,7 @@
         speed: value("pitchSpeed"),
         course: value("pitchCourse"),
         zone: value("pitchZone"),
-        runnerEvent: value("pitchRunner Event"),
+        runnerEvent: value("pitchRunnerEvent"),
         ball: num("pitchBall"),
         strike: num("pitchStrike"),
         text: value("pitchText")
@@ -845,90 +844,159 @@
     async function makeAndSendPitch() {
       await sendCommand(makePitchCommand());
     }
-    
+
     function autoPaResultText() {
       const result = value("paResult");
-      const detail = value ("paDetail");
+      const detail = value("paDetail");
       const runs = num("paRuns");
       const rbi = num("paRbi");
       const bases = resultBaseText();
-      
+
       const parts = [];
-      
+
       if (result) parts.push(result);
       if (detail) parts.push(detail);
       if (runs > 0) parts.push(`${runs}点`);
       if (rbi > 0) parts.push(`${rbi}打点`);
-      parts.push(`打席後:${num("pa0utsEnd")}アウト、${bases}`);
-      
+      parts.push(`打席後：${num("paOutsEnd")}アウト、${bases}`);
+
       el("paResultText").value = parts.join(" / ");
       saveFormValue(el("paResultText"));
     }
-    
-    function makePaResult Command() {
+
+    function makePaResultCommand() {
       return showOutput({
         type: "pa_result",
         inning: num("paInning"),
         half: value("paHalf"),
         result: value("paResult"),
         detail: value("paDetail"),
-        outs: num("pa0utsEnd"),
+        outs: num("paOutsEnd"),
         runs: num("paRuns"),
         hits: num("paHits"),
         errors: num("paErrors"),
-        rbi; num("paRbi"),
+        rbi: num("paRbi"),
         base1: value("resultBase1"),
         base2: value("resultBase2"),
         base3: value("resultBase3"),
         final: value("finalCheck"),
         text: value("paResultText")
-    });
-  }
+      });
+    }
 
-async function makeAndSendPaResult()
+    async function makeAndSendPaResult() {
+      await sendCommand(makePaResultCommand());
+    }
 
-await
+    function makeNoteCommand() {
+      return showOutput({
+        type: "note",
+        inning: num("noteInning"),
+        half: value("noteHalf"),
+        category: value("noteCategory"),
+        target: value("noteTarget"),
+        text: [value("noteTarget"), value("noteText")].filter(Boolean).join(" / ")
+      });
+    }
 
-sendCommand(make PaResult Command()); }
+    async function makeAndSendNote() {
+      await sendCommand(makeNoteCommand());
+    }
 
-function makeNoteCommand() {
+    function openViewPage() {
+      const gameNumber = getGameNumber();
+      window.open(`./index.html?game=${gameNumber}`, "_blank");
+    }
 
-return showOutput({
+    function saveFormValue(target) {
+      if (!target || !target.id || !target.hasAttribute("data-save")) return;
 
-type: "note",
+      const key = `${STORAGE_PREFIX}${target.id}`;
 
-inning: num("noteInning"),
+      if (target.type === "checkbox") {
+        localStorage.setItem(key, target.checked ? "1" : "0");
+      } else {
+        localStorage.setItem(key, target.value);
+      }
+    }
 
-half: value("noteHalf"),
+    function restoreFormValues() {
+      document.querySelectorAll("[data-save]").forEach((target) => {
+        const key = `${STORAGE_PREFIX}${target.id}`;
+        const saved = localStorage.getItem(key);
 
-category: value("noteCategory"),
+        if (saved === null) return;
 
-target: value("noteTarget"),
+        if (target.type === "checkbox") {
+          target.checked = saved === "1";
+        } else {
+          target.value = saved;
+        }
+      });
+    }
 
-text: [value("noteTarget"),
+    function setupAutoSave() {
+      document.addEventListener("input", (event) => {
+        saveFormValue(event.target);
+      });
 
-value("noteText")].filter(Boolean).join( " / ")
+      document.addEventListener("change", (event) => {
+        saveFormValue(event.target);
+      });
+    }
 
-});
+    function initControls() {
+      fillInningSelect("paInning");
+      fillInningSelect("noteInning");
 
-}
+      fillNumberSelect("paOuts", 2);
+      fillNumberSelect("paOutsEnd", 3);
+      fillNumberSelect("pitchNo", 30, 1);
+      fillNumberSelect("pitchBall", 3);
+      fillNumberSelect("pitchStrike", 2);
+      fillSpeedSelect("pitchSpeed");
+      fillNumberSelect("paRuns", 20);
+      fillNumberSelect("paHits", 20);
+      fillNumberSelect("paErrors", 20);
+      fillNumberSelect("paRbi", 4);
 
-async function makeAndSendNote() {
+      fillSelect("pitchResult", pitchResults);
+      fillSelect("pitchDetail", pitchDetails);
+      fillSelect("pitchType", pitchTypes);
+      fillSelect("pitchCourse", pitchCourses);
+      fillSelect("pitchZone", pitchZones);
+      fillSelect("pitchRunnerEvent", runnerEvents);
+      fillSelect("paResult", paResults);
+      fillSelect("paDetail", paDetails);
+      fillSelect("noteCategory", noteCategories);
 
-await
+      buildLineupRows();
+      fillLineupTeamSelect();
+    }
 
-sendCommand(makeNoteCommand()); }
+    function init() {
+      initControls();
+      setupAutoSave();
+      restoreFormValues();
 
-function openViewPage() {
+      if (!value("gameNumber")) {
+        el("gameNumber").value = "1";
+      }
 
-const gameNumber =
+      const savedPassword =
+        sessionStorage.getItem(PASSWORD_KEY) ||
+        localStorage.getItem(PASSWORD_KEY) ||
+        "";
 
-getGameNumber();
+      if (savedPassword) {
+        el("editorPassword").value = savedPassword;
+      }
 
-window.open(`./index.html?game=$ }
+      syncTeamNames();
+      checkDh();
+    }
 
-{gameNumber}`, "_blank");
-
-function save FormValue (target) {
-
-if (!target || ! target.id || !
+    init();
+  </script>
+</body>
+</html>
