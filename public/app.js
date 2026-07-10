@@ -1,9 +1,8 @@
-const CURRENT_DATA_URL = "./data/current.json";
-const REFRESH_MS = 15000;
+const API_BASE = window.LIVE_API_BASE;
+const REFRESH_MS = 5000;
 const STORAGE_KEY = "gifu_softbaseball_selected_game_number";
 
-let activeDataUrl = CURRENT_DATA_URL;
-let activeGameNumber = null;
+let activeGameNumber = 1;
 
 const $ = (id) => document.getElementById(id);
 
@@ -59,29 +58,21 @@ function getSavedGameNumber() {
 function saveGameNumber(gameNumber) {
   if (gameNumber) {
     localStorage.setItem(STORAGE_KEY, String(gameNumber));
-  } else {
-    localStorage.removeItem(STORAGE_KEY);
   }
-}
-
-function gameDataUrl(gameNumber) {
-  return `./data/game-${gameNumber}.json`;
 }
 
 function setUrlGame(gameNumber) {
   const url = new URL(location.href);
-
-  if (gameNumber) {
-    url.searchParams.set("game", String(gameNumber));
-  } else {
-    url.searchParams.delete("game");
-  }
-
+  url.searchParams.set("game", String(gameNumber));
   history.replaceState(null, "", url);
 }
 
-async function fetchGameData(url) {
-  const res = await fetch(`${url}?ts=${Date.now()}`, {
+async function fetchGameData(gameNumber) {
+  if (!API_BASE) {
+    throw new Error("config.js の LIVE_API_BASE が設定されていません。");
+  }
+
+  const res = await fetch(`${API_BASE}/api/games/${gameNumber}?ts=${Date.now()}`, {
     cache: "no-store"
   });
 
@@ -153,10 +144,15 @@ function renderLineup(list) {
   }
 
   return list.map((player) => {
-    const order = player.order ? `<span class="batOrder">${escapeHtml(player.order)}.</span>` : "";
+    const order = player.order
+      ? `<span class="batOrder">${escapeHtml(player.order)}.</span>`
+      : "";
+
     const name = escapeHtml(player.name || "");
     const posText = normalizePosition(player.position);
-    const pos = posText ? ` <span class="pos">(${escapeHtml(posText)})</span>` : "";
+    const pos = posText
+      ? ` <span class="pos">(${escapeHtml(posText)})</span>`
+      : "";
 
     return `<li>${order}${name}${pos}</li>`;
   }).join("");
@@ -182,18 +178,27 @@ function renderPitchRows(pitches) {
       ${pitches.map((pitch) => `
         <div class="pitchRow">
           <div class="pitchNo">${escapeHtml(pitch.number)}球目</div>
+
           <div class="pitchMain">
             <strong>${escapeHtml(pitch.result || "記録")}</strong>
-            <span>${[
-              pitch.pitchType,
-              pitch.course,
-              pitch.zone,
-              pitch.speed ? `${pitch.speed}km/h` : "",
-              pitch.runnerEvent
-            ].filter(Boolean).map(escapeHtml).join(" / ")}</span>
+
+            <span>
+              ${[
+                pitch.pitchType,
+                pitch.course,
+                pitch.zone,
+                pitch.speed ? `${pitch.speed}km/h` : "",
+                pitch.detail,
+                pitch.runnerEvent
+              ].filter(Boolean).map(escapeHtml).join(" / ")}
+            </span>
+
             ${pitch.text ? `<p>${escapeHtml(pitch.text)}</p>` : ""}
           </div>
-          <div class="pitchCount">B${escapeHtml(pitch.ball)} S${escapeHtml(pitch.strike)}</div>
+
+          <div class="pitchCount">
+            B${escapeHtml(pitch.ball)} S${escapeHtml(pitch.strike)}
+          </div>
         </div>
       `).join("")}
     </div>
@@ -208,6 +213,7 @@ function renderAtBat(atBat) {
           <p class="inning">${escapeHtml(atBat.inningLabel || "速報")}</p>
           <h3>${escapeHtml(atBat.attackTeam || "")}</h3>
         </div>
+
         <div class="atBatMeta">
           <span>${escapeHtml(formatClock(atBat.created_at))}</span>
         </div>
@@ -218,10 +224,12 @@ function renderAtBat(atBat) {
           <p>打者</p>
           <strong>${escapeHtml(atBat.batter || "--")}</strong>
         </div>
+
         <div>
           <p>投手</p>
           <strong>${escapeHtml(atBat.pitcher || "--")}</strong>
         </div>
+
         <div>
           <p>開始時</p>
           <strong>${escapeHtml(atBat.outsStart)}アウト / ${escapeHtml(baseText(atBat.basesStart))}</strong>
@@ -250,6 +258,7 @@ function renderNote(note) {
   return `
     <article class="noteCard">
       <div class="noteLabel">${escapeHtml(note.category || "メモ")}</div>
+
       <div>
         <p class="inning">${escapeHtml(note.inningLabel || "速報")}</p>
         <div class="noteText">${escapeHtml(note.text || "")}</div>
@@ -258,29 +267,30 @@ function renderNote(note) {
   `;
 }
 
-function renderTimeline(data) {
-  const atBatMap = new Map((data.atBats || []).map((atBat) => [atBat.number, atBat]));
-  const noteMap = new Map((data.notes || []).map((note) => [note.number, note]));
+function renderFeed(data) {
+  const items = [];
 
-  const timeline = data.timeline || [];
+  (data.atBats || []).forEach((atBat) => {
+    items.push({
+      kind: "atbat",
+      created_at: atBat.created_at || "",
+      html: renderAtBat(atBat)
+    });
+  });
 
-  if (!timeline.length) {
-    return "";
-  }
+  (data.notes || []).forEach((note) => {
+    items.push({
+      kind: "note",
+      created_at: note.created_at || "",
+      html: renderNote(note)
+    });
+  });
 
-  return timeline.map((item) => {
-    if (item.kind === "atbat") {
-      const atBat = atBatMap.get(item.number);
-      return atBat ? renderAtBat(atBat) : "";
-    }
+  items.sort((a, b) => {
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
 
-    if (item.kind === "note") {
-      const note = noteMap.get(item.number);
-      return note ? renderNote(note) : "";
-    }
-
-    return "";
-  }).join("");
+  return items.map((item) => item.html).join("");
 }
 
 function updateCurrentPanel(data) {
@@ -297,14 +307,14 @@ function updateCurrentPanel(data) {
 }
 
 function updateGameSelector(data) {
-  const gameNumber = data.issue_number || activeGameNumber || "";
+  const gameNumber = data.game_no || activeGameNumber || 1;
 
   if ($("viewGameNumber")) {
-    $("viewGameNumber").value = gameNumber || "";
+    $("viewGameNumber").value = gameNumber;
   }
 
   if ($("currentGameLabel")) {
-    $("currentGameLabel").textContent = gameNumber ? `#${gameNumber}` : "最新";
+    $("currentGameLabel").textContent = `#${gameNumber}`;
   }
 }
 
@@ -330,13 +340,14 @@ function renderGame(data) {
 
   $("awayLineupTitle").textContent = match.awayTeam || "先攻";
   $("homeLineupTitle").textContent = match.homeTeam || "後攻";
+
   $("awayLineup").innerHTML = renderLineup(data.lineups?.away || []);
   $("homeLineup").innerHTML = renderLineup(data.lineups?.home || []);
 
   updateCurrentPanel(data);
   updateGameSelector(data);
 
-  const feed = renderTimeline(data);
+  const feed = renderFeed(data);
 
   if (!feed) {
     $("empty").hidden = false;
@@ -356,21 +367,25 @@ function renderGame(data) {
 }
 
 async function update() {
-  const data = await fetchGameData(activeDataUrl);
+  const data = await fetchGameData(activeGameNumber);
   renderGame(data);
 }
 
 function showLoadError(message) {
-  $("gameStatus").textContent = "読み込みエラー";
-  $("empty").hidden = false;
-  $("empty").textContent = message;
+  if ($("gameStatus")) {
+    $("gameStatus").textContent = "読み込みエラー";
+  }
+
+  if ($("empty")) {
+    $("empty").hidden = false;
+    $("empty").textContent = message;
+  }
 }
 
 async function loadGameNumber(gameNumber) {
   if (!Number.isFinite(gameNumber) || gameNumber <= 0) return;
 
   activeGameNumber = gameNumber;
-  activeDataUrl = gameDataUrl(gameNumber);
 
   saveGameNumber(gameNumber);
   setUrlGame(gameNumber);
@@ -379,7 +394,7 @@ async function loadGameNumber(gameNumber) {
     await update();
   } catch (err) {
     console.error(err);
-    showLoadError(`試合 #${gameNumber} のデータを読み込めません。Actionsが成功しているか確認してください。`);
+    showLoadError(`試合 #${gameNumber} のデータを読み込めません。Workerとconfig.jsを確認してください。`);
   }
 }
 
@@ -389,12 +404,6 @@ async function loadSelectedGame() {
 }
 
 async function loadCurrentGame() {
-  activeGameNumber = null;
-  activeDataUrl = CURRENT_DATA_URL;
-
-  saveGameNumber(null);
-  setUrlGame(null);
-
   try {
     await update();
   } catch (err) {
@@ -405,6 +414,7 @@ async function loadCurrentGame() {
 
 function setupGameInputEvents() {
   const input = $("viewGameNumber");
+
   if (!input) return;
 
   input.addEventListener("keydown", async (event) => {
@@ -423,21 +433,14 @@ function setupGameInputEvents() {
 async function init() {
   setupGameInputEvents();
 
-  const gameFromUrl = getGameFromUrl();
-  const savedGameNumber = getSavedGameNumber();
+  activeGameNumber = getGameFromUrl() || getSavedGameNumber() || 1;
 
-  if (gameFromUrl) {
-    activeGameNumber = gameFromUrl;
-    activeDataUrl = gameDataUrl(gameFromUrl);
-    saveGameNumber(gameFromUrl);
-  } else if (savedGameNumber) {
-    activeGameNumber = savedGameNumber;
-    activeDataUrl = gameDataUrl(savedGameNumber);
-    setUrlGame(savedGameNumber);
-  } else {
-    activeGameNumber = null;
-    activeDataUrl = CURRENT_DATA_URL;
+  if ($("viewGameNumber")) {
+    $("viewGameNumber").value = String(activeGameNumber);
   }
+
+  saveGameNumber(activeGameNumber);
+  setUrlGame(activeGameNumber);
 
   try {
     await update();
