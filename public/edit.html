@@ -3,379 +3,1711 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>1球速報 編集ページ</title>
-  <link rel="stylesheet" href="./style.css">
-</head>
-<body>
-  <header class="topbar">
-    <div>
-      <p class="eyebrow">LIVE EDITOR</p>
-      <h1>1球速報 編集ページ</h1>
-      <p class="sub">選択式で入力し、Cloudflare D1へ直接送信します。</p>
-    </div>
+  <meta name="theme-color" content="#082b55">
 
-    <div class="buttonRow">
-      <a class="editLink" href="./index.html">閲覧ページ</a>
+  <title>高校軟式野球 1球速報編集</title>
+
+  <style>
+    :root {
+      --bg: #edf2f7;
+      --card: #ffffff;
+      --ink: #152238;
+      --muted: #667085;
+      --line: #d8e0ea;
+      --primary: #0b3b75;
+      --primary-2: #1261ad;
+      --primary-soft: #e8f1fb;
+      --green: #12814b;
+      --green-soft: #e7f6ee;
+      --red: #c52c35;
+      --red-soft: #fdeced;
+      --orange: #b46700;
+      --orange-soft: #fff3d8;
+      --dark: #111827;
+      --shadow: 0 12px 34px rgba(15, 35, 60, 0.11);
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans JP",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      touch-action: manipulation;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .editorHeader {
+      background:
+        radial-gradient(circle at top right, rgba(64, 147, 230, 0.38), transparent 38%),
+        linear-gradient(135deg, #06264c, #0d559c);
+      color: white;
+      padding: 18px;
+    }
+
+    .editorHeaderInner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      opacity: 0.88;
+    }
+
+    .editorHeader h1 {
+      margin: 0;
+      font-size: clamp(22px, 5vw, 34px);
+      line-height: 1.15;
+    }
+
+    .headerSub {
+      margin: 7px 0 0;
+      color: rgba(255, 255, 255, 0.83);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .headerActions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .headerLink {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 8px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .controlBar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(237, 242, 247, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .controlBarInner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: auto minmax(190px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .compactControl {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .compactControl label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .compactControl input {
+      min-width: 0;
+      height: 38px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: white;
+    }
+
+    #gameNumber {
+      width: 68px;
+      text-align: center;
+      font-weight: 1000;
+    }
+
+    #editorPassword {
+      width: min(260px, 100%);
+    }
+
+    .connectionState {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 86px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #eef1f5;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .connectionState.sending {
+      background: var(--orange-soft);
+      color: var(--orange);
+    }
+
+    .connectionState.success {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .connectionState.error {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .stepNav {
+      position: sticky;
+      top: 59px;
+      z-index: 45;
+      overflow-x: auto;
+      background: white;
+      border-bottom: 1px solid var(--line);
+      scrollbar-width: thin;
+    }
+
+    .stepNavInner {
+      width: max-content;
+      min-width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 8px 12px;
+      display: flex;
+      gap: 7px;
+    }
+
+    .stepTab {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: white;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .stepTab.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .stepTab.complete::after {
+      content: " ✓";
+      color: var(--green);
+    }
+
+    .stepTab.active.complete::after {
+      color: #bff3d7;
+    }
+
+    .editorMain {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 14px 14px 90px;
+    }
+
+    .stateRibbon {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .stateItem {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 5px 16px rgba(15, 35, 60, 0.05);
+    }
+
+    .stateItem span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      margin-bottom: 3px;
+    }
+
+    .stateItem strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .panel {
+      margin-bottom: 15px;
+      padding: 17px;
+      border: 1px solid rgba(216, 224, 234, 0.95);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .panelHead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .panelHead h2 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .panelHead p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .stepBadge {
+      display: inline-flex;
+      margin-bottom: 7px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 1000;
+    }
+
+    .formGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 11px;
+    }
+
+    .formGrid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fieldLabel {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .fieldLabel small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: white;
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary-2);
+      box-shadow: 0 0 0 3px rgba(18, 97, 173, 0.12);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    .buttonRow {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .primaryButton,
+    .secondaryButton,
+    .dangerButton,
+    .miniButton {
+      border: 0;
+      border-radius: 999px;
+      min-height: 40px;
+      padding: 9px 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .primaryButton {
+      background: var(--primary-2);
+      color: white;
+    }
+
+    .secondaryButton {
+      background: #edf2f7;
+      color: var(--primary);
+    }
+
+    .dangerButton {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .miniButton {
+      min-height: 32px;
+      padding: 6px 10px;
+      font-size: 11px;
+      background: #edf2f7;
+      color: var(--primary);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .saveNotice {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .lineupTeams {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .lineupSide {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .lineupSideHead {
+      padding: 11px 12px;
+      background: #f7f9fc;
+      border-bottom: 1px solid var(--line);
+      color: var(--primary);
+      font-weight: 1000;
+    }
+
+    .lineupRows {
+      display: grid;
+      gap: 7px;
+      padding: 10px;
+    }
+
+    .lineupRow {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 82px;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .lineupOrder {
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 1000;
+      text-align: center;
+    }
+
+    .currentCard {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+      gap: 14px;
+    }
+
+    .currentSummary {
+      padding: 15px;
+      border-radius: 17px;
+      background:
+        radial-gradient(circle at top right, rgba(88, 164, 236, 0.2), transparent 40%),
+        #f5f9fd;
+      border: 1px solid #d5e4f3;
+    }
+
+    .currentSummaryTop {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 13px;
+    }
+
+    .currentSummaryTop strong {
+      color: var(--primary);
+      font-size: 19px;
+    }
+
+    .countVisual {
+      display: flex;
+      gap: 7px;
+    }
+
+    .countVisual div {
+      min-width: 45px;
+      padding: 7px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: white;
+    }
+
+    .countVisual span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 1000;
+    }
+
+    .countVisual b {
+      display: block;
+      font-size: 21px;
+      line-height: 1;
+      color: var(--primary);
+    }
+
+    .currentPlayers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .currentPlayers div {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: white;
+    }
+
+    .currentPlayers span {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .currentPlayers strong {
+      font-size: 16px;
+    }
+
+    .baseSummary {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: white;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .quickChoiceGrid {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .choiceButton {
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 8px 10px;
+      background: white;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .choiceButton.selected {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .pitchEditorGrid,
+    .resultEditorGrid {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(280px, 0.86fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .diagramCard {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: #f8fafc;
+    }
+
+    .diagramTitle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .diagramTitle strong {
+      font-size: 14px;
+    }
+
+    .diagramTitle span {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .zoneArea {
+      display: grid;
+      grid-template-columns: 54px minmax(220px, 390px);
+      gap: 8px;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .zoneSideLabels {
+      display: grid;
+      grid-template-rows: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    .zoneSideLabels span {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .strikeZone {
+      aspect-ratio: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 4px;
+      padding: 6px;
+      border-radius: 15px;
+      background: #dbe5ef;
+    }
+
+    .zoneCell {
+      position: relative;
+      min-width: 0;
+      border: 0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 8px;
+      font-weight: 900;
+    }
+
+    .zoneCell.zoneStrike {
+      background: #edf6ff;
+      outline: 1px solid #b7d4ef;
+    }
+
+    .zoneCell.zoneBall {
+      background: #f7f8fa;
+    }
+
+    .zoneCell.selected {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 0 0 3px rgba(11, 59, 117, 0.18);
+    }
+
+    .zoneBottomLabels {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin: 6px 0 0 62px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .pitchResultPanel {
+      display: grid;
+      gap: 11px;
+    }
+
+    .choiceGroup {
+      display: grid;
+      gap: 7px;
+    }
+
+    .choiceGroupTitle {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 1000;
+      letter-spacing: 0.08em;
+    }
+
+    .generatedText {
+      padding: 12px;
+      border: 1px solid #cedbe8;
+      border-radius: 14px;
+      background: #f7fbff;
+    }
+
+    .generatedText span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--primary);
+      font-size: 10px;
+      font-weight: 1000;
+    }
+
+    .generatedText p {
+      margin: 0;
+      line-height: 1.75;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
+    .fieldDiagramWrap {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(230px, 0.7fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .fieldDiagram {
+      position: relative;
+      width: min(100%, 520px);
+      aspect-ratio: 1.18;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid #b9d7b7;
+      border-radius: 50% 50% 18px 18px;
+      background:
+        radial-gradient(circle at 50% 83%, #d7b68a 0 7%, transparent 7.5%),
+        linear-gradient(45deg, transparent 49.5%, rgba(255,255,255,0.65) 50%, transparent 50.5%),
+        linear-gradient(-45deg, transparent 49.5%, rgba(255,255,255,0.65) 50%, transparent 50.5%),
+        radial-gradient(circle at 50% 70%, #d6b081 0 24%, transparent 24.5%),
+        linear-gradient(#8ac27d, #66aa62);
+    }
+
+    .fieldDiamond {
+      position: absolute;
+      left: 50%;
+      top: 61%;
+      width: 31%;
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%) rotate(45deg);
+      border: 2px solid rgba(255, 255, 255, 0.75);
+      background: rgba(218, 179, 128, 0.72);
+    }
+
+    .fieldPosition {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      min-width: 39px;
+      min-height: 35px;
+      border: 1px solid rgba(8, 43, 85, 0.25);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.93);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 1000;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15, 35, 60, 0.12);
+    }
+
+    .fieldPosition.selected {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 0 0 4px rgba(11, 59, 117, 0.2);
+    }
+
+    .field-cf { left: 50%; top: 12%; }
+    .field-lf { left: 20%; top: 25%; }
+    .field-rf { left: 80%; top: 25%; }
+    .field-ss { left: 38%; top: 43%; }
+    .field-2b { left: 62%; top: 43%; }
+    .field-3b { left: 28%; top: 62%; }
+    .field-1b { left: 72%; top: 62%; }
+    .field-p  { left: 50%; top: 61%; }
+    .field-c  { left: 50%; top: 88%; }
+    .field-fl { left: 10%; top: 67%; }
+    .field-fr { left: 90%; top: 67%; }
+
+    .resultOptions {
+      display: grid;
+      gap: 13px;
+    }
+
+    .adjustBox {
+      margin-top: 14px;
+      padding: 13px;
+      border: 1px dashed #c4d1df;
+      border-radius: 15px;
+      background: #fafcff;
+    }
+
+    .adjustBox summary {
+      cursor: pointer;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 1000;
+    }
+
+    .adjustBoxContent {
+      margin-top: 12px;
+    }
+
+    .subPanel {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fafcff;
+    }
+
+    .subPanel h3 {
+      margin: 0 0 11px;
+      font-size: 16px;
+    }
+
+    .historyToolbar {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .historyList {
+      display: grid;
+      gap: 8px;
+    }
+
+    .historyItem {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+    }
+
+    .historyType {
+      padding: 4px 6px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 10px;
+      font-weight: 1000;
+      text-align: center;
+    }
+
+    .historyBody strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .historyBody p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .emptyBox {
+      padding: 20px;
+      border: 1px dashed var(--line);
+      border-radius: 15px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .stickyActionBar {
+      position: fixed;
+      z-index: 60;
+      left: 50%;
+      bottom: 12px;
+      width: min(calc(100% - 24px), 660px);
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 9px;
+      padding: 9px;
+      border: 1px solid rgba(216, 224, 234, 0.95);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 40px rgba(15, 35, 60, 0.2);
+    }
+
+    .stickyActionBar span {
+      min-width: 0;
+      padding-left: 8px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 100;
+      left: 50%;
+      bottom: 82px;
+      max-width: min(90vw, 520px);
+      transform: translateX(-50%) translateY(15px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--dark);
+      color: white;
+      font-size: 12px;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .warningText {
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    @media (max-width: 850px) {
+      .stateRibbon {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .currentCard,
+      .pitchEditorGrid,
+      .resultEditorGrid,
+      .fieldDiagramWrap {
+        grid-template-columns: 1fr;
+      }
+
+      .lineupTeams {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .editorHeaderInner {
+        display: grid;
+      }
+
+      .headerActions {
+        justify-content: flex-start;
+      }
+
+      .controlBarInner {
+        grid-template-columns: auto 1fr;
+      }
+
+      .connectionState {
+        grid-column: 1 / -1;
+        justify-self: start;
+      }
+
+      .stepNav {
+        top: 102px;
+      }
+
+      .stateRibbon {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .formGrid,
+      .formGrid.three,
+      .currentPlayers {
+        grid-template-columns: 1fr;
+      }
+
+      .lineupRow {
+        grid-template-columns: 31px minmax(0, 1fr) 72px;
+      }
+
+      .zoneArea {
+        grid-template-columns: 42px minmax(210px, 1fr);
+      }
+
+      .zoneBottomLabels {
+        margin-left: 50px;
+      }
+
+      .fieldDiagram {
+        min-height: 310px;
+      }
+
+      .stickyActionBar {
+        border-radius: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="editorHeader">
+    <div class="editorHeaderInner">
+      <div>
+        <p class="eyebrow">HIGH SCHOOL RUBBER BASEBALL LIVE</p>
+        <h1>1球速報 編集</h1>
+        <p class="headerSub">
+          基本操作は自動化されています。選手交代や特殊な走者進塁がある場合だけ修正してください。
+        </p>
+      </div>
+
+      <div class="headerActions">
+        <a class="headerLink" href="./index.html" target="_blank" rel="noreferrer">
+          閲覧ページ
+        </a>
+
+        <button class="headerLink" type="button" id="serverSyncTop">
+          サーバー同期
+        </button>
+      </div>
     </div>
   </header>
 
-  <main class="container editorContainer">
-    <section class="panel">
-      <h2>編集認証</h2>
-      <p class="help">Cloudflare Workerに設定した編集用パスワードを入力します。</p>
+  <div class="controlBar">
+    <div class="controlBarInner">
+      <div class="compactControl">
+        <label for="gameNumber">試合番号</label>
+        <input id="gameNumber" type="number" min="1" inputmode="numeric" value="1">
+      </div>
 
-      <label>編集用パスワード
-        <input id="editorPassword" type="password" placeholder="EDITOR_PASSWORD">
-      </label>
+      <div class="compactControl">
+        <label for="editorPassword">編集パスワード</label>
+        <input
+          id="editorPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="このタブを閉じるまで保存"
+        >
+      </div>
 
-      <label class="checkLabel">
-        <input id="rememberPassword" type="checkbox">
-        この端末に一時保存する
-      </label>
+      <span id="connectionState" class="connectionState">未送信</span>
+    </div>
+  </div>
 
-      <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="saveEditorPassword()">パスワード保存</button>
-        <button class="button secondary" type="button" onclick="clearEditorPassword()">パスワード削除</button>
+  <nav class="stepNav" aria-label="編集ステップ">
+    <div class="stepNavInner">
+      <button class="stepTab active" data-tab="match">1 試合情報</button>
+      <button class="stepTab" data-tab="lineup">2 スタメン</button>
+      <button class="stepTab" data-tab="state">3 現在状況</button>
+      <button class="stepTab" data-tab="pitch">4 1球速報</button>
+      <button class="stepTab" data-tab="result">5 打席結果</button>
+      <button class="stepTab" data-tab="change">6 交代・出来事</button>
+      <button class="stepTab" data-tab="history">7 履歴</button>
+    </div>
+  </nav>
+
+  <main class="editorMain">
+    <section class="stateRibbon">
+      <div class="stateItem">
+        <span>現在</span>
+        <strong id="ribbonInning">1回表</strong>
+      </div>
+
+      <div class="stateItem">
+        <span>攻撃</span>
+        <strong id="ribbonAttack">先攻</strong>
+      </div>
+
+      <div class="stateItem">
+        <span>打者</span>
+        <strong id="ribbonBatter">未入力</strong>
+      </div>
+
+      <div class="stateItem">
+        <span>投手</span>
+        <strong id="ribbonPitcher">未入力</strong>
+      </div>
+
+      <div class="stateItem">
+        <span>カウント</span>
+        <strong id="ribbonCount">B0 S0 O0</strong>
+      </div>
+
+      <div class="stateItem">
+        <span>走者</span>
+        <strong id="ribbonBases">なし</strong>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>試合番号</h2>
-      <p class="help">Issue番号ではありません。D1上の試合番号です。新しい試合は未使用の番号を入れるだけで作れます。</p>
-
-      <div class="gameMiniSelector">
-        <span>試合番号</span>
-        <input id="gameNumber" data-save type="number" min="1" inputmode="numeric" placeholder="1">
-        <button type="button" onclick="openViewPage()">見る</button>
+    <!-- STEP 1 -->
+    <section class="panel tabPanel" data-panel="match">
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 1</span>
+          <h2>試合情報</h2>
+          <p>ここで入力したチーム名は、スタメン・攻撃側・投手側の表示に自動反映されます。</p>
+        </div>
       </div>
-    </section>
-
-    <section class="panel">
-      <p class="stepLabel">STEP 1</p>
-      <h2>大会・試合情報</h2>
 
       <div class="formGrid">
-        <label>大会名
-          <input id="matchTitle" data-save placeholder="例：第74回岐阜県高等学校総合体育大会 軟式野球競技">
+        <label class="fieldLabel">
+          大会名
+          <input id="matchTitle" placeholder="例：第74回岐阜県高等学校総合体育大会">
         </label>
 
-        <label>日付
-          <input id="matchDate" data-save type="date">
+        <label class="fieldLabel">
+          日付
+          <input id="matchDate" type="date">
         </label>
 
-        <label>会場
-          <input id="matchVenue" data-save placeholder="例：中津川公園野球場">
+        <label class="fieldLabel">
+          会場
+          <input id="matchVenue" placeholder="例：中津川公園野球場">
         </label>
 
-        <label>試合名
-          <input id="matchRound" data-save placeholder="例：準決勝 第2試合">
+        <label class="fieldLabel">
+          試合名
+          <input id="matchRound" placeholder="例：準決勝 第2試合">
         </label>
 
-        <label>先攻チーム
-          <input id="awayTeam" data-save placeholder="例：県岐商" oninput="syncTeamNames()">
+        <label class="fieldLabel">
+          先攻チーム
+          <input id="awayTeam" placeholder="例：県岐商">
         </label>
 
-        <label>後攻チーム
-          <input id="homeTeam" data-save placeholder="例：中京" oninput="syncTeamNames()">
+        <label class="fieldLabel">
+          後攻チーム
+          <input id="homeTeam" placeholder="例：中京">
         </label>
       </div>
 
       <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="makeMatchCommand()">送信内容を作る</button>
-        <button class="button" type="button" onclick="makeAndSendMatch()">すぐ送信</button>
+        <button class="primaryButton" type="button" id="sendMatch">
+          試合情報を保存して送信
+        </button>
+
+        <button class="secondaryButton" type="button" data-next-tab="lineup">
+          スタメンへ
+        </button>
       </div>
+
+      <p class="saveNotice">入力内容は試合番号ごとに、このブラウザへ自動保存されます。</p>
     </section>
 
-    <section class="panel">
-      <p class="stepLabel">STEP 2</p>
-      <h2>スタメン</h2>
+    <!-- STEP 2 -->
+    <section class="panel tabPanel" data-panel="lineup" hidden>
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 2</span>
+          <h2>スタメン</h2>
+          <p>投手は守備位置「投」または「P」の選手から自動取得します。</p>
+        </div>
+      </div>
 
-      <label>チーム
-        <select id="lineupTeam" data-save></select>
-      </label>
+      <div class="lineupTeams">
+        <div class="lineupSide">
+          <div class="lineupSideHead" id="awayLineupHead">先攻</div>
+          <div class="lineupRows" id="awayLineupRows"></div>
+        </div>
 
-      <div id="lineupRows" class="lineupEditor"></div>
-
-      <div id="pitcherRow" class="pitcherRow" hidden>
-        <h3>P.</h3>
-
-        <div class="lineupInputRow">
-          <span>P.</span>
-          <input id="pitcherName" data-save placeholder="投手名">
-          <select id="pitcherPosition" disabled>
-            <option value="P">P</option>
-          </select>
+        <div class="lineupSide">
+          <div class="lineupSideHead" id="homeLineupHead">後攻</div>
+          <div class="lineupRows" id="homeLineupRows"></div>
         </div>
       </div>
 
       <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="makeLineupCommand()">送信内容を作る</button>
-        <button class="button" type="button" onclick="makeAndSendLineup()">すぐ送信</button>
+        <button class="primaryButton" type="button" id="sendLineups">
+          両チームのスタメンを保存して送信
+        </button>
+
+        <button class="secondaryButton" type="button" data-next-tab="state">
+          現在状況へ
+        </button>
       </div>
     </section>
 
-    <section class="panel">
-      <p class="stepLabel">STEP 3</p>
-      <h2>打席開始</h2>
-
-      <div class="formGrid">
-        <label>回
-          <select id="paInning" data-save></select>
-        </label>
-
-        <label>表/裏
-          <select id="paHalf" data-save onchange="syncTeamNames()">
-            <option value="top">表</option>
-            <option value="bottom">裏</option>
-          </select>
-        </label>
-
-        <label>アウト数
-          <select id="paOuts" data-save></select>
-        </label>
-
-        <label>打者
-          <input id="paBatter" data-save placeholder="打者名">
-        </label>
-
-        <label>投手
-          <input id="paPitcher" data-save placeholder="投手名">
-        </label>
-
-        <label>一塁走者
-          <input id="paBase1" data-save placeholder="なしなら空欄">
-        </label>
-
-        <label>二塁走者
-          <input id="paBase2" data-save placeholder="なしなら空欄">
-        </label>
-
-        <label>三塁走者
-          <input id="paBase3" data-save placeholder="なしなら空欄">
-        </label>
+    <!-- STEP 3 -->
+    <section class="panel tabPanel" data-panel="state" hidden>
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 3</span>
+          <h2>現在の試合状況</h2>
+          <p>通常は自動更新されます。試合開始時や、記録修正が必要な場合だけ操作します。</p>
+        </div>
       </div>
+
+      <div class="currentCard">
+        <div class="currentSummary">
+          <div class="currentSummaryTop">
+            <strong id="currentSummaryInning">1回表</strong>
+
+            <div class="countVisual">
+              <div>
+                <span>B</span>
+                <b id="summaryBalls">0</b>
+              </div>
+              <div>
+                <span>S</span>
+                <b id="summaryStrikes">0</b>
+              </div>
+              <div>
+                <span>O</span>
+                <b id="summaryOuts">0</b>
+              </div>
+            </div>
+          </div>
+
+          <div class="currentPlayers">
+            <div>
+              <span>打者</span>
+              <strong id="summaryBatter">未入力</strong>
+            </div>
+
+            <div>
+              <span>投手</span>
+              <strong id="summaryPitcher">未入力</strong>
+            </div>
+          </div>
+
+          <div class="baseSummary" id="summaryBases">
+            走者なし
+          </div>
+        </div>
+
+        <div class="formGrid">
+          <label class="fieldLabel">
+            回
+            <select id="stateInning"></select>
+          </label>
+
+          <label class="fieldLabel">
+            表・裏
+            <select id="stateHalf">
+              <option value="top">表</option>
+              <option value="bottom">裏</option>
+            </select>
+          </label>
+
+          <label class="fieldLabel">
+            アウト
+            <select id="stateOuts">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </label>
+
+          <label class="fieldLabel">
+            打席の左右
+            <select id="batterSide">
+              <option value="right">右打者</option>
+              <option value="left">左打者</option>
+            </select>
+          </label>
+
+          <label class="fieldLabel">
+            打者
+            <input id="stateBatter" list="playerNames" placeholder="自動入力">
+          </label>
+
+          <label class="fieldLabel">
+            投手
+            <input id="statePitcher" list="playerNames" placeholder="自動入力">
+          </label>
+
+          <label class="fieldLabel">
+            一塁走者
+            <input id="stateBase1" list="playerNames" placeholder="なし">
+          </label>
+
+          <label class="fieldLabel">
+            二塁走者
+            <input id="stateBase2" list="playerNames" placeholder="なし">
+          </label>
+
+          <label class="fieldLabel">
+            三塁走者
+            <input id="stateBase3" list="playerNames" placeholder="なし">
+          </label>
+        </div>
+      </div>
+
+      <datalist id="playerNames"></datalist>
 
       <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="makePaStartCommand()">送信内容を作る</button>
-        <button class="button" type="button" onclick="makeAndSendPaStart()">すぐ送信</button>
+        <button class="secondaryButton" type="button" id="applyCurrentState">
+          状況だけ反映
+        </button>
+
+        <button class="primaryButton" type="button" id="startPlateAppearance">
+          この状態で打席開始
+        </button>
+
+        <button class="secondaryButton" type="button" data-next-tab="pitch">
+          1球速報へ
+        </button>
       </div>
     </section>
 
-    <section class="panel">
-      <p class="stepLabel">STEP 4</p>
-      <h2>1球入力</h2>
-
-      <div class="formGrid">
-        <label>球数
-          <select id="pitchNo" data-save></select>
-        </label>
-
-        <label>結果
-          <select id="pitchResult" data-save onchange="autoPitchText()"></select>
-        </label>
-
-        <label>細かい出来事
-          <select id="pitchDetail" data-save onchange="autoPitchText()"></select>
-        </label>
-
-        <label>球種
-          <select id="pitchType" data-save onchange="autoPitchText()"></select>
-        </label>
-
-        <label>コース
-          <select id="pitchCourse" data-save onchange="autoPitchText()"></select>
-        </label>
-
-        <label>高さ・ゾーン
-          <select id="pitchZone" data-save onchange="autoPitchText()"></select>
-        </label>
-
-        <label>球速
-          <select id="pitchSpeed" data-save></select>
-        </label>
-
-        <label>走者イベント
-          <select id="pitchRunnerEvent" data-save onchange="autoPitchText()"></select>
-        </label>
-
-        <label>ボール
-          <select id="pitchBall" data-save></select>
-        </label>
-
-        <label>ストライク
-          <select id="pitchStrike" data-save></select>
-        </label>
+    <!-- STEP 4 -->
+    <section class="panel tabPanel" data-panel="pitch" hidden>
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 4</span>
+          <h2>1球速報</h2>
+          <p>
+            位置と結果を選び、送信します。打席開始が未送信の場合は自動で先に送信されます。
+          </p>
+        </div>
       </div>
 
-      <label>本文
-        <textarea id="pitchText" data-save rows="4" placeholder="自動生成後に必要なら修正"></textarea>
+      <div class="pitchEditorGrid">
+        <div class="diagramCard">
+          <div class="diagramTitle">
+            <strong>投球位置</strong>
+            <span>打者から見た外角・内角</span>
+          </div>
+
+          <div class="zoneArea">
+            <div class="zoneSideLabels">
+              <span>高く外れる</span>
+              <span>高め</span>
+              <span>真ん中</span>
+              <span>低め</span>
+              <span>低く外れる</span>
+            </div>
+
+            <div class="strikeZone" id="strikeZone"></div>
+          </div>
+
+          <div class="zoneBottomLabels">
+            <span>外へ外れる</span>
+            <span>外角</span>
+            <span>中央</span>
+            <span>内角</span>
+            <span>内へ外れる</span>
+          </div>
+
+          <p class="saveNotice">
+            選択中：<strong id="selectedZoneText">未選択</strong>
+          </p>
+        </div>
+
+        <div class="pitchResultPanel">
+          <div class="choiceGroup">
+            <div class="choiceGroupTitle">投球結果</div>
+            <div class="quickChoiceGrid" id="pitchResultChoices"></div>
+          </div>
+
+          <div class="formGrid">
+            <label class="fieldLabel">
+              球種
+              <select id="pitchType"></select>
+            </label>
+
+            <label class="fieldLabel">
+              球速
+              <select id="pitchSpeed"></select>
+            </label>
+
+            <label class="fieldLabel">
+              補足
+              <select id="pitchDetail"></select>
+            </label>
+
+            <label class="fieldLabel">
+              球数
+              <input id="pitchNumberDisplay" readonly>
+            </label>
+          </div>
+
+          <div class="generatedText">
+            <span>自動生成される速報本文</span>
+            <p id="pitchTextPreview">投球位置と結果を選択してください。</p>
+          </div>
+
+          <label class="fieldLabel">
+            本文を手動修正
+            <textarea id="pitchTextManual" placeholder="空欄なら自動生成文を使用"></textarea>
+          </label>
+
+          <div class="buttonRow">
+            <button class="primaryButton" type="button" id="sendPitch">
+              この1球を送信
+            </button>
+
+            <button class="secondaryButton" type="button" id="clearPitchDraft">
+              選択をリセット
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="panel tabPanel" data-panel="result" hidden>
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 5</span>
+          <h2>打席結果</h2>
+          <p>
+            打球が飛んだ守備位置と結果を選択します。一般的な進塁は自動提案されます。
+          </p>
+        </div>
+      </div>
+
+      <div class="fieldDiagramWrap">
+        <div class="diagramCard">
+          <div class="diagramTitle">
+            <strong>打球位置・処理した守備位置</strong>
+            <span>位置をタップ</span>
+          </div>
+
+          <div class="fieldDiagram" id="fieldDiagram">
+            <div class="fieldDiamond"></div>
+
+            <button class="fieldPosition field-cf" data-field="中">中</button>
+            <button class="fieldPosition field-lf" data-field="左">左</button>
+            <button class="fieldPosition field-rf" data-field="右">右</button>
+            <button class="fieldPosition field-ss" data-field="遊">遊</button>
+            <button class="fieldPosition field-2b" data-field="二">二</button>
+            <button class="fieldPosition field-3b" data-field="三">三</button>
+            <button class="fieldPosition field-1b" data-field="一">一</button>
+            <button class="fieldPosition field-p" data-field="投">投</button>
+            <button class="fieldPosition field-c" data-field="捕">捕</button>
+            <button class="fieldPosition field-fl" data-field="左翼線">左線</button>
+            <button class="fieldPosition field-fr" data-field="右翼線">右線</button>
+          </div>
+
+          <p class="saveNotice">
+            選択中：<strong id="selectedFieldText">未選択</strong>
+          </p>
+        </div>
+
+        <div class="resultOptions">
+          <div class="choiceGroup">
+            <div class="choiceGroupTitle">プレー結果</div>
+            <div class="quickChoiceGrid" id="playResultChoices"></div>
+          </div>
+
+          <div class="choiceGroup">
+            <div class="choiceGroupTitle">打球の種類</div>
+            <div class="quickChoiceGrid" id="ballTypeChoices"></div>
+          </div>
+
+          <div class="formGrid">
+            <label class="fieldLabel">
+              プレー詳細
+              <select id="playDetail"></select>
+            </label>
+
+            <label class="fieldLabel">
+              打点
+              <select id="resultRbi"></select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <details class="adjustBox" open>
+        <summary>結果後の得点・アウト・走者を確認</summary>
+
+        <div class="adjustBoxContent">
+          <div class="formGrid three">
+            <label class="fieldLabel">
+              このプレーの得点
+              <select id="resultRuns"></select>
+            </label>
+
+            <label class="fieldLabel">
+              このプレーの安打
+              <select id="resultHits"></select>
+            </label>
+
+            <label class="fieldLabel">
+              このプレーの失策
+              <select id="resultErrors"></select>
+            </label>
+
+            <label class="fieldLabel">
+              プレー後アウト数
+              <select id="resultOuts"></select>
+            </label>
+
+            <label class="fieldLabel">
+              一塁走者
+              <input id="resultBase1" list="playerNames" placeholder="なし">
+            </label>
+
+            <label class="fieldLabel">
+              二塁走者
+              <input id="resultBase2" list="playerNames" placeholder="なし">
+            </label>
+
+            <label class="fieldLabel">
+              三塁走者
+              <input id="resultBase3" list="playerNames" placeholder="なし">
+            </label>
+          </div>
+
+          <label class="fieldLabel" style="margin-top:11px;">
+            <span>
+              <input id="finalCheck" type="checkbox" style="width:auto;">
+              試合終了
+            </span>
+          </label>
+        </div>
+      </details>
+
+      <div class="generatedText" style="margin-top:14px;">
+        <span>自動生成される速報本文</span>
+        <p id="resultTextPreview">守備位置とプレー結果を選択してください。</p>
+      </div>
+
+      <label class="fieldLabel" style="margin-top:12px;">
+        本文を手動修正
+        <textarea id="resultTextManual" placeholder="空欄なら自動生成文を使用"></textarea>
       </label>
 
       <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="autoPitchText()">本文自動生成</button>
-        <button class="button secondary" type="button" onclick="makePitchCommand()">送信内容を作る</button>
-        <button class="button" type="button" onclick="makeAndSendPitch()">すぐ送信</button>
+        <button class="primaryButton" type="button" id="sendResult">
+          打席結果を送信して次打者へ
+        </button>
+
+        <button class="secondaryButton" type="button" id="suggestResultAgain">
+          自動提案をやり直す
+        </button>
+
+        <button class="secondaryButton" type="button" data-next-tab="pitch">
+          1球速報へ戻る
+        </button>
       </div>
     </section>
 
-    <section class="panel">
-      <p class="stepLabel">STEP 5</p>
-      <h2>打席結果</h2>
-
-      <div class="formGrid">
-        <label>結果
-          <select id="paResult" data-save onchange="autoPaResultText()"></select>
-        </label>
-
-        <label>細かい出来事
-          <select id="paDetail" data-save onchange="autoPaResultText()"></select>
-        </label>
-
-        <label>打点
-          <select id="paRbi" data-save></select>
-        </label>
-
-        <label>打席後アウト数
-          <select id="paOutsEnd" data-save></select>
-        </label>
-
-        <label><span id="runsLabel">攻撃側 得点</span>
-          <select id="paRuns" data-save></select>
-        </label>
-
-        <label><span id="hitsLabel">攻撃側 安打</span>
-          <select id="paHits" data-save></select>
-        </label>
-
-        <label><span id="errorsLabel">守備側 失策</span>
-          <select id="paErrors" data-save></select>
-        </label>
-
-        <label>一塁走者
-          <input id="resultBase1" data-save placeholder="なしなら空欄">
-        </label>
-
-        <label>二塁走者
-          <input id="resultBase2" data-save placeholder="なしなら空欄">
-        </label>
-
-        <label>三塁走者
-          <input id="resultBase3" data-save placeholder="なしなら空欄">
-        </label>
+    <!-- STEP 6 -->
+    <section class="panel tabPanel" data-panel="change" hidden>
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 6</span>
+          <h2>選手交代・その他の出来事</h2>
+          <p>通常進行では使用しません。代打・代走・投手交代などのイレギュラー時に使います。</p>
+        </div>
       </div>
 
-      <label class="checkLabel">
-        <input id="finalCheck" data-save type="checkbox">
-        試合終了
-      </label>
+      <div class="subPanel">
+        <h3>選手交代</h3>
 
-      <label>本文
-        <textarea id="paResultText" data-save rows="4" placeholder="自動生成後に必要なら修正"></textarea>
-      </label>
+        <div class="formGrid">
+          <label class="fieldLabel">
+            チーム
+            <select id="changeTeam">
+              <option value="away">先攻</option>
+              <option value="home">後攻</option>
+            </select>
+          </label>
 
-      <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="autoPaResultText()">本文自動生成</button>
-        <button class="button secondary" type="button" onclick="makePaResultCommand()">送信内容を作る</button>
-        <button class="button" type="button" onclick="makeAndSendPaResult()">すぐ送信</button>
+          <label class="fieldLabel">
+            交代の種類
+            <select id="changeType">
+              <option value="投手交代">投手交代</option>
+              <option value="代打">代打</option>
+              <option value="代走">代走</option>
+              <option value="守備交代">守備交代</option>
+              <option value="守備位置変更">守備位置変更</option>
+            </select>
+          </label>
+
+          <label class="fieldLabel">
+            交代する選手
+            <select id="changeOutPlayer"></select>
+          </label>
+
+          <label class="fieldLabel">
+            新しい選手
+            <input id="changeInPlayer" placeholder="選手名">
+          </label>
+
+          <label class="fieldLabel">
+            新しい守備位置
+            <select id="changePosition"></select>
+          </label>
+        </div>
+
+        <div class="generatedText">
+          <span>交代内容</span>
+          <p id="changeTextPreview">交代内容を入力してください。</p>
+        </div>
+
+        <div class="buttonRow">
+          <button class="primaryButton" type="button" id="sendPlayerChange">
+            交代を反映して送信
+          </button>
+        </div>
       </div>
-    </section>
 
-    <section class="panel">
-      <p class="stepLabel">OPTION</p>
-      <h2>細かい出来事・メモ</h2>
+      <div class="subPanel">
+        <h3>その他の出来事</h3>
 
-      <div class="formGrid">
-        <label>回
-          <select id="noteInning" data-save></select>
+        <div class="formGrid">
+          <label class="fieldLabel">
+            種類
+            <select id="noteCategory"></select>
+          </label>
+
+          <label class="fieldLabel">
+            対象
+            <input id="noteTarget" placeholder="例：中京、審判団、グラウンド">
+          </label>
+        </div>
+
+        <label class="fieldLabel">
+          本文
+          <textarea id="noteText" placeholder="例：グラウンド整備のため試合が一時中断しています。"></textarea>
         </label>
 
-        <label>表/裏
-          <select id="noteHalf" data-save>
-            <option value="top">表</option>
-            <option value="bottom">裏</option>
-          </select>
-        </label>
-
-        <label>種類
-          <select id="noteCategory" data-save></select>
-        </label>
-
-        <label>対象チーム・選手
-          <input id="noteTarget" data-save placeholder="例：中京 投手交代">
-        </label>
-      </div>
-
-      <label>本文
-        <textarea id="noteText" data-save rows="4" placeholder="例：投手交代。佐藤から田中へ。"></textarea>
-      </label>
-
-      <div class="buttonRow">
-        <button class="button secondary" type="button" onclick="makeNoteCommand()">送信内容を作る</button>
-        <button class="button" type="button" onclick="makeAndSendNote()">すぐ送信</button>
+        <div class="buttonRow">
+          <button class="primaryButton" type="button" id="sendNote">
+            出来事を送信
+          </button>
+        </div>
       </div>
     </section>
 
-    <section class="panel outputPanel">
-      <h2>送信内容プレビュー</h2>
-      <p class="help">確認用です。手でコピーする必要はありません。</p>
-
-      <textarea id="output" rows="10" readonly></textarea>
-
-      <div class="buttonRow">
-        <button class="button" type="button" onclick="sendLatestCommand()">この内容を送信</button>
-        <button class="button secondary" type="button" onclick="openViewPage()">閲覧ページで確認</button>
+    <!-- STEP 7 -->
+    <section class="panel tabPanel" data-panel="history" hidden>
+      <div class="panelHead">
+        <div>
+          <span class="stepBadge">STEP 7</span>
+          <h2>送信履歴</h2>
+          <p>D1に保存されているイベントを時系列順で確認します。削除すると試合データが再計算されます。</p>
+        </div>
       </div>
 
-      <p id="sendStatus" class="help"></p>
+      <div class="historyToolbar">
+        <button class="secondaryButton" type="button" id="refreshHistory">
+          履歴を更新
+        </button>
+
+        <button class="secondaryButton" type="button" id="syncFromServer">
+          サーバー内容から編集状態を再同期
+        </button>
+      </div>
+
+      <div id="historyList" class="historyList">
+        <div class="emptyBox">「履歴を更新」を押してください。</div>
+      </div>
     </section>
   </main>
+
+  <div class="stickyActionBar">
+    <span id="stickyStatus">入力内容は自動保存されます</span>
+
+    <button class="miniButton" type="button" id="nextRecommended">
+      次の推奨操作
+    </button>
+  </div>
+
+  <div id="toast" class="toast"></div>
 
   <script src="./config.js"></script>
 
   <script>
-    const API_BASE = window.LIVE_API_BASE;
-    const STORAGE_PREFIX = "one_pitch_editor_d1_v1_";
-    const PASSWORD_KEY = "one_pitch_editor_password_v1";
+    const API_BASE = window.LIVE_API_BASE || "";
 
-    let latestCommand = null;
+    const STORAGE_VERSION = "gifu_live_editor_v4";
+    const LAST_GAME_KEY = `${STORAGE_VERSION}_last_game`;
+    const PASSWORD_SESSION_KEY = `${STORAGE_VERSION}_password`;
 
-        const positions = ["", "投", "捕", "一", "二", "三", "遊", "左", "中", "右", "D"];
-    const pitchResults = [
-      "ボール",
-      "見逃し",
-      "空振り",
-      "ファウル",
-      "バントファウル",
-      "インプレー",
-      "死球",
-      "敬遠",
-      "牽制",
-      "盗塁",
-      "暴投",
-      "捕逸",
-      "ボーク",
-      "タイム"
-    ];
-
-    const pitchDetails = [
+    const POSITIONS = [
       "",
-      "ストライク先行",
-      "フルカウント",
-      "粘る",
-      "高めに外れる",
-      "低めに外れる",
-      "内角を突く",
-      "外角いっぱい",
-      "空振りを奪う",
-      "ファウルで粘る",
-      "バント構え",
-      "走者スタート",
-      "投球前牽制",
-      "ワンバウンド",
-      "捕手好捕"
+      "投",
+      "捕",
+      "一",
+      "二",
+      "三",
+      "遊",
+      "左",
+      "中",
+      "右",
+      "D",
+      "P"
     ];
 
-    const pitchTypes = [
+    const PITCH_TYPES = [
       "",
       "ストレート",
       "カーブ",
@@ -389,611 +1721,2552 @@
       "不明"
     ];
 
-    const pitchCourses = [
+    const PITCH_DETAILS = [
       "",
-      "内角",
-      "真ん中",
-      "外角",
-      "内角高め",
-      "内角低め",
-      "外角高め",
-      "外角低め",
-      "高め",
-      "低め"
-    ];
-
-    const pitchZones = [
-      "",
-      "ストライクゾーン",
-      "ボールゾーン",
-      "高め",
-      "低め",
+      "際どいコース",
+      "甘く入る",
       "ワンバウンド",
-      "甘い球",
-      "厳しいコース"
-    ];
-
-    const runnerEvents = [
-      "",
-      "盗塁成功",
-      "盗塁失敗",
-      "牽制死",
-      "暴投で進塁",
-      "捕逸で進塁",
-      "ボークで進塁",
-      "走者帰塁",
+      "大きく外れる",
+      "逆球",
+      "バントの構え",
       "走者スタート",
-      "重盗"
+      "フルカウント",
+      "ファウルで粘る"
     ];
 
-    const paResults = [
-      "",
-      "空振り三振",
-      "見逃し三振",
-      "四球",
+    const PITCH_RESULTS = [
+      "ボール",
+      "見逃しストライク",
+      "空振り",
+      "ファウル",
+      "バントファウル",
+      "インプレー",
       "死球",
-      "投ゴロ",
-      "捕ゴロ",
-      "一ゴロ",
-      "二ゴロ",
-      "三ゴロ",
-      "遊ゴロ",
-      "左飛",
-      "中飛",
-      "右飛",
-      "左安",
-      "中安",
-      "右安",
+      "牽制",
+      "暴投",
+      "捕逸"
+    ];
+
+    const PLAY_RESULTS = [
+      "アウト",
       "内野安打",
+      "ヒット",
       "二塁打",
       "三塁打",
       "本塁打",
+      "エラー",
+      "野選",
       "犠打",
       "犠飛",
-      "スクイズ",
-      "失策出塁",
-      "野選",
       "併殺",
-      "走塁死",
-      "守備妨害",
-      "打撃妨害"
+      "ファウルフライ"
     ];
 
-    const paDetails = [
+    const BALL_TYPES = [
+      "ゴロ",
+      "ライナー",
+      "フライ",
+      "バント",
+      "強い打球",
+      "弱い打球"
+    ];
+
+    const PLAY_DETAILS = [
       "",
-      "先制",
-      "同点",
-      "勝ち越し",
-      "逆転",
-      "追加点",
-      "タイムリー",
-      "満塁",
-      "送りバント成功",
-      "スクイズ成功",
-      "犠飛で得点",
-      "進塁打",
-      "好守",
-      "失策絡み",
-      "併殺崩れ",
-      "走者生還",
-      "走者進塁",
-      "三者凡退",
-      "攻守交代"
+      "好捕",
+      "悪送球",
+      "捕球できず",
+      "送球間に進塁",
+      "前進守備",
+      "ダイビングキャッチ",
+      "フェンス直撃",
+      "右翼線",
+      "左翼線",
+      "一二塁間",
+      "三遊間",
+      "センター前",
+      "テキサスヒット",
+      "イレギュラーバウンド",
+      "併殺崩れ"
     ];
 
-    const noteCategories = [
+    const NOTE_CATEGORIES = [
       "投手交代",
       "代打",
       "代走",
       "守備交代",
       "守備位置変更",
-      "攻守交代",
       "タイム",
-      "中断",
-      "再開",
-      "治療",
-      "審判協議",
+      "試合中断",
+      "試合再開",
       "グラウンド整備",
+      "選手治療",
+      "審判協議",
+      "抗議",
       "その他"
     ];
 
-    function el(id) {
-      return document.getElementById(id);
+    const TYPE_LABELS = {
+      match: "試合情報",
+      lineup: "スタメン",
+      pa_start: "打席開始",
+      pitch: "1球",
+      pa_result: "打席結果",
+      note: "出来事"
+    };
+
+    const ZONE_ROW_LABELS = [
+      "高く外れる",
+      "高め",
+      "真ん中",
+      "低め",
+      "低く外れる"
+    ];
+
+    const ZONE_COL_LABELS = [
+      "外へ外れる",
+      "外角",
+      "中央",
+      "内角",
+      "内へ外れる"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+
+    let activeTab = "match";
+    let state = null;
+    let toastTimer = null;
+    let sending = false;
+
+    function emptyLineup() {
+      return Array.from({ length: 9 }, (_, index) => ({
+        order: String(index + 1),
+        name: "",
+        position: ""
+      }));
     }
 
-    function value(id) {
-      const target = el(id);
-      if (!target) return "";
+    function defaultState(gameNo = 1) {
+      return {
+        gameNo,
+        match: {
+          title: "",
+          date: "",
+          venue: "",
+          round: "",
+          awayTeam: "",
+          homeTeam: ""
+        },
+        lineups: {
+          away: emptyLineup(),
+          home: emptyLineup()
+        },
+        current: {
+          inning: 1,
+          half: "top",
+          outs: 0,
+          balls: 0,
+          strikes: 0,
+          bases: {
+            first: "",
+            second: "",
+            third: ""
+          },
+          batterIndex: {
+            away: 0,
+            home: 0
+          },
+          batter: "",
+          pitcher: "",
+          batterSide: "right",
+          pitchNo: 1,
+          paActive: false,
+          final: false
+        },
+        pitchDraft: {
+          zoneRow: null,
+          zoneCol: null,
+          zoneLabel: "",
+          result: "",
+          pitchType: "",
+          speed: "",
+          detail: "",
+          manualText: ""
+        },
+        resultDraft: {
+          field: "",
+          playResult: "",
+          ballType: "",
+          detail: "",
+          runs: 0,
+          hits: 0,
+          errors: 0,
+          rbi: 0,
+          outs: 0,
+          base1: "",
+          base2: "",
+          base3: "",
+          final: false,
+          manualText: ""
+        },
+        completed: {
+          match: false,
+          lineup: false
+        },
+        updatedAt: new Date().toISOString()
+      };
+    }
 
-      if (target.type === "checkbox") {
-        return target.checked;
+    function normalizeState(raw, gameNo) {
+      const base = defaultState(gameNo);
+
+      if (!raw || typeof raw !== "object") {
+        return base;
       }
 
-      return target.value;
+      return {
+        ...base,
+        ...raw,
+        gameNo,
+        match: {
+          ...base.match,
+          ...(raw.match || {})
+        },
+        lineups: {
+          away: normalizeLineup(raw.lineups?.away),
+          home: normalizeLineup(raw.lineups?.home)
+        },
+        current: {
+          ...base.current,
+          ...(raw.current || {}),
+          bases: {
+            ...base.current.bases,
+            ...(raw.current?.bases || {})
+          },
+          batterIndex: {
+            ...base.current.batterIndex,
+            ...(raw.current?.batterIndex || {})
+          }
+        },
+        pitchDraft: {
+          ...base.pitchDraft,
+          ...(raw.pitchDraft || {})
+        },
+        resultDraft: {
+          ...base.resultDraft,
+          ...(raw.resultDraft || {})
+        },
+        completed: {
+          ...base.completed,
+          ...(raw.completed || {})
+        }
+      };
     }
 
-    function num(id) {
-      return Number(value(id)) || 0;
+    function normalizeLineup(list) {
+      const blank = emptyLineup();
+
+      if (!Array.isArray(list)) return blank;
+
+      return blank.map((player, index) => ({
+        order: String(index + 1),
+        name: String(list[index]?.name || ""),
+        position: String(list[index]?.position || "")
+      }));
+    }
+
+    function storageKey(gameNo) {
+      return `${STORAGE_VERSION}_game_${gameNo}`;
+    }
+
+    function saveState() {
+      if (!state) return;
+
+      state.updatedAt = new Date().toISOString();
+      localStorage.setItem(storageKey(state.gameNo), JSON.stringify(state));
+      localStorage.setItem(LAST_GAME_KEY, String(state.gameNo));
+
+      $("stickyStatus").textContent =
+        `試合 #${state.gameNo} の編集内容を保存しました`;
+    }
+
+    function loadState(gameNo) {
+      const raw = localStorage.getItem(storageKey(gameNo));
+
+      if (!raw) {
+        return defaultState(gameNo);
+      }
+
+      try {
+        return normalizeState(JSON.parse(raw), gameNo);
+      } catch {
+        return defaultState(gameNo);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function numeric(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function showToast(message) {
+      const toast = $("toast");
+
+      toast.textContent = message;
+      toast.classList.add("show");
+
+      clearTimeout(toastTimer);
+
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+
+    function setConnectionState(text, type = "") {
+      const target = $("connectionState");
+
+      target.textContent = text;
+      target.className = `connectionState ${type}`.trim();
+    }
+
+    function setSending(value) {
+      sending = value;
+
+      document.querySelectorAll(
+        ".primaryButton, .dangerButton, .secondaryButton"
+      ).forEach((button) => {
+        if (
+          button.id === "clearPitchDraft" ||
+          button.dataset.nextTab
+        ) {
+          return;
+        }
+
+        button.disabled = value;
+      });
     }
 
     function optionHtml(value, label = value) {
-      return `<option value="${value}">${label}</option>`;
+      return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
     }
 
-    function fillSelect(id, values) {
-      el(id).innerHTML = values.map((v) => optionHtml(v, v || "選択")).join("");
+    function fillSelect(id, values, includeBlank = false) {
+      const target = $(id);
+      if (!target) return;
+
+      const items = includeBlank ? ["", ...values] : values;
+
+      target.innerHTML = items
+        .map((value) => optionHtml(value, value || "選択"))
+        .join("");
     }
 
-    function fillNumberSelect(id, max, start = 0) {
+    function fillNumberSelect(id, minimum, maximum) {
+      const target = $(id);
+      if (!target) return;
+
       const values = [];
 
-      for (let i = start; i <= max; i++) {
-        values.push(i);
+      for (let number = minimum; number <= maximum; number += 1) {
+        values.push(number);
       }
 
-      el(id).innerHTML = values.map((v) => optionHtml(v, String(v))).join("");
+      target.innerHTML = values
+        .map((number) => optionHtml(number, String(number)))
+        .join("");
     }
 
-    function fillSpeedSelect(id) {
-      const values = [""];
+    function setupStaticControls() {
+      $("stateInning").innerHTML = Array.from(
+        { length: 20 },
+        (_, index) => optionHtml(index + 1, `${index + 1}回`)
+      ).join("");
 
-      for (let i = 80; i <= 160; i++) {
-        values.push(i);
-      }
+      fillSelect("pitchType", PITCH_TYPES);
+      fillSelect("pitchDetail", PITCH_DETAILS);
 
-      el(id).innerHTML = values.map((v) => optionHtml(v, v === "" ? "未入力" : String(v))).join("");
+      $("pitchSpeed").innerHTML =
+        optionHtml("", "未入力") +
+        Array.from(
+          { length: 81 },
+          (_, index) => optionHtml(index + 80, `${index + 80} km/h`)
+        ).join("");
+
+      fillSelect("playDetail", PLAY_DETAILS);
+
+      fillNumberSelect("resultRuns", 0, 10);
+      fillNumberSelect("resultHits", 0, 5);
+      fillNumberSelect("resultErrors", 0, 5);
+      fillNumberSelect("resultRbi", 0, 4);
+      fillNumberSelect("resultOuts", 0, 3);
+
+      fillSelect("changePosition", POSITIONS);
+      fillSelect("noteCategory", NOTE_CATEGORIES);
+
+      buildChoiceButtons(
+        "pitchResultChoices",
+        PITCH_RESULTS,
+        () => state.pitchDraft.result,
+        (value) => {
+          state.pitchDraft.result = value;
+          saveState();
+          renderPitchDraft();
+        }
+      );
+
+      buildChoiceButtons(
+        "playResultChoices",
+        PLAY_RESULTS,
+        () => state.resultDraft.playResult,
+        (value) => {
+          state.resultDraft.playResult = value;
+          suggestResultState();
+          saveState();
+          renderResultDraft();
+        }
+      );
+
+      buildChoiceButtons(
+        "ballTypeChoices",
+        BALL_TYPES,
+        () => state.resultDraft.ballType,
+        (value) => {
+          state.resultDraft.ballType = value;
+          saveState();
+          renderResultDraft();
+        }
+      );
+
+      buildStrikeZone();
     }
 
-    function fillInningSelect(id) {
-      el(id).innerHTML = Array.from({ length: 20 }, (_, i) => {
-        const inning = i + 1;
-        return optionHtml(inning, `${inning}回`);
+    function buildChoiceButtons(containerId, values, getter, setter) {
+      const container = $(containerId);
+
+      container.innerHTML = values.map((value) => {
+        return `
+          <button
+            type="button"
+            class="choiceButton"
+            data-choice="${escapeHtml(value)}"
+          >
+            ${escapeHtml(value)}
+          </button>
+        `;
       }).join("");
+
+      container.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-choice]");
+        if (!button) return;
+
+        setter(button.dataset.choice);
+
+        container.querySelectorAll("[data-choice]").forEach((item) => {
+          item.classList.toggle(
+            "selected",
+            item.dataset.choice === getter()
+          );
+        });
+      });
     }
 
-    function fillLineupTeamSelect() {
-      const away = value("awayTeam") || "先攻";
-      const home = value("homeTeam") || "後攻";
-      const current = value("lineupTeam") || "away";
+    function refreshChoiceSelection(containerId, selectedValue) {
+      const container = $(containerId);
+      if (!container) return;
 
-      el("lineupTeam").innerHTML = `
-        <option value="away">${away}</option>
-        <option value="home">${home}</option>
-      `;
-
-      el("lineupTeam").value = current === "home" ? "home" : "away";
+      container.querySelectorAll("[data-choice]").forEach((button) => {
+        button.classList.toggle(
+          "selected",
+          button.dataset.choice === selectedValue
+        );
+      });
     }
 
-    function positionSelectHtml(id) {
-      return `
-        <select id="${id}" data-save onchange="checkDh(); saveFormValue(this);">
-          ${positions.map((p) => optionHtml(p, p || "選択")).join("")}
-        </select>
-      `;
+    function buildStrikeZone() {
+      const zone = $("strikeZone");
+      const cells = [];
+
+      for (let row = 0; row < 5; row += 1) {
+        for (let col = 0; col < 5; col += 1) {
+          const isStrike = row >= 1 && row <= 3 && col >= 1 && col <= 3;
+
+          cells.push(`
+            <button
+              type="button"
+              class="zoneCell ${isStrike ? "zoneStrike" : "zoneBall"}"
+              data-zone-row="${row}"
+              data-zone-col="${col}"
+              aria-label="${ZONE_COL_LABELS[col]} ${ZONE_ROW_LABELS[row]}"
+            ></button>
+          `);
+        }
+      }
+
+      zone.innerHTML = cells.join("");
+
+      zone.addEventListener("click", (event) => {
+        const cell = event.target.closest(".zoneCell");
+        if (!cell) return;
+
+        const row = Number(cell.dataset.zoneRow);
+        const col = Number(cell.dataset.zoneCol);
+
+        state.pitchDraft.zoneRow = row;
+        state.pitchDraft.zoneCol = col;
+        state.pitchDraft.zoneLabel = makeZoneLabel(row, col);
+
+        saveState();
+        renderPitchDraft();
+      });
+    }
+
+    function makeZoneLabel(row, col) {
+      const vertical = ZONE_ROW_LABELS[row];
+      const horizontal = ZONE_COL_LABELS[col];
+
+      if (row === 2 && col === 2) {
+        return "真ん中";
+      }
+
+      if (row === 2) {
+        return horizontal;
+      }
+
+      if (col === 2) {
+        return vertical;
+      }
+
+      return `${horizontal}${vertical}`;
     }
 
     function buildLineupRows() {
-      const rows = [];
+      buildLineupSide("away");
+      buildLineupSide("home");
+    }
 
-      for (let i = 1; i <= 9; i++) {
-        rows.push(`
-          <div class="lineupInputRow">
-            <span>${i}.</span>
-            <input id="playerName${i}" data-save placeholder="名前">
-            ${positionSelectHtml(`playerPos${i}`)}
+    function buildLineupSide(team) {
+      const container = $(`${team}LineupRows`);
+
+      container.innerHTML = state.lineups[team].map((player, index) => {
+        return `
+          <div class="lineupRow">
+            <div class="lineupOrder">${index + 1}.</div>
+
+            <input
+              data-lineup-team="${team}"
+              data-lineup-index="${index}"
+              data-lineup-field="name"
+              value="${escapeHtml(player.name)}"
+              placeholder="選手名"
+            >
+
+            <select
+              data-lineup-team="${team}"
+              data-lineup-index="${index}"
+              data-lineup-field="position"
+            >
+              ${POSITIONS.map((position) => {
+                const selected =
+                  player.position === position ? " selected" : "";
+
+                return `
+                  <option value="${escapeHtml(position)}"${selected}>
+                    ${escapeHtml(position || "守備")}
+                  </option>
+                `;
+              }).join("")}
+            </select>
           </div>
-        `);
+        `;
+      }).join("");
+    }
+
+    function getOffenseTeam() {
+      return state.current.half === "top" ? "away" : "home";
+    }
+
+    function getDefenseTeam() {
+      return state.current.half === "top" ? "home" : "away";
+    }
+
+    function teamName(team) {
+      if (team === "away") {
+        return state.match.awayTeam || "先攻";
       }
 
-      el("lineupRows").innerHTML = rows.join("");
+      return state.match.homeTeam || "後攻";
     }
 
-    function checkDh() {
-      const hasDh = Array.from({ length: 9 }, (_, i) => {
-        return value(`playerPos${i + 1}`);
-      }).some((pos) => pos === "D");
-
-      el("pitcherRow").hidden = !hasDh;
+    function validPlayers(team) {
+      return state.lineups[team].filter((player) => player.name);
     }
 
-    function syncTeamNames() {
-      const away = value("awayTeam") || "先攻";
-      const home = value("homeTeam") || "後攻";
-      const half = value("paHalf") || "top";
+    function automaticBatter() {
+      const team = getOffenseTeam();
+      const lineup = validPlayers(team);
 
-      fillLineupTeamSelect();
+      if (!lineup.length) return "";
 
-      const attack = half === "top" ? away : home;
-      const defense = half === "top" ? home : away;
+      const rawIndex = numeric(state.current.batterIndex[team]);
+      const index = rawIndex % lineup.length;
 
-      el("runsLabel").textContent = `${attack} 得点`;
-      el("hitsLabel").textContent = `${attack} 安打`;
-      el("errorsLabel").textContent = `${defense} 失策`;
+      return lineup[index]?.name || "";
     }
 
-    function resultBaseText() {
-      const bases = [];
+    function automaticPitcher() {
+      const defense = getDefenseTeam();
+      const lineup = validPlayers(defense);
 
-      if (value("resultBase1")) bases.push(`一塁:${value("resultBase1")}`);
-      if (value("resultBase2")) bases.push(`二塁:${value("resultBase2")}`);
-      if (value("resultBase3")) bases.push(`三塁:${value("resultBase3")}`);
+      const pitcher = lineup.find((player) => {
+        return player.position === "投" || player.position === "P";
+      });
 
-      return bases.length ? bases.join("、") : "走者なし";
+      return pitcher?.name || "";
     }
 
-    function setStatus(text) {
-      el("sendStatus").textContent = text;
-    }
-
-    function showOutput(obj) {
-      latestCommand = obj;
-      el("output").value = JSON.stringify(obj, null, 2);
-      setStatus("送信内容を作成しました。");
-      return obj;
-    }
-
-    function getGameNumber() {
-      const n = Number(value("gameNumber") || 1);
-      return Number.isFinite(n) && n > 0 ? n : 1;
-    }
-
-    function saveEditorPassword() {
-      const password = value("editorPassword");
-
-      if (!password) {
-        alert("パスワードを入力してください。");
-        return;
+    function ensureAutomaticPlayers(force = false) {
+      if (force || !state.current.batter) {
+        state.current.batter = automaticBatter();
       }
 
-      if (el("rememberPassword").checked) {
-        localStorage.setItem(PASSWORD_KEY, password);
-        alert("この端末に保存しました。共有PCではあとで削除してください。");
-      } else {
-        sessionStorage.setItem(PASSWORD_KEY, password);
-        alert("このタブだけに保存しました。");
+      if (force || !state.current.pitcher) {
+        state.current.pitcher = automaticPitcher();
       }
     }
 
-    function clearEditorPassword() {
-      localStorage.removeItem(PASSWORD_KEY);
-      sessionStorage.removeItem(PASSWORD_KEY);
-      el("editorPassword").value = "";
-      alert("保存済みパスワードを削除しました。");
+    function inningText() {
+      return `${state.current.inning}回${
+        state.current.half === "top" ? "表" : "裏"
+      }`;
     }
 
-    function getEditorPassword() {
-      return (
-        value("editorPassword") ||
-        sessionStorage.getItem(PASSWORD_KEY) ||
-        localStorage.getItem(PASSWORD_KEY) ||
-        ""
+    function attackTeamName() {
+      return teamName(getOffenseTeam());
+    }
+
+    function defenseTeamName() {
+      return teamName(getDefenseTeam());
+    }
+
+    function baseText(bases = state.current.bases) {
+      const runners = [];
+
+      if (bases.first) runners.push(`一塁 ${bases.first}`);
+      if (bases.second) runners.push(`二塁 ${bases.second}`);
+      if (bases.third) runners.push(`三塁 ${bases.third}`);
+
+      return runners.length ? runners.join("、") : "走者なし";
+    }
+
+    function shortBaseText(bases = state.current.bases) {
+      const labels = [];
+
+      if (bases.first) labels.push("一");
+      if (bases.second) labels.push("二");
+      if (bases.third) labels.push("三");
+
+      return labels.length ? `${labels.join("・")}塁` : "なし";
+    }
+
+    function renderAll() {
+      ensureAutomaticPlayers(false);
+
+      renderTabs();
+      renderMatch();
+      renderLineups();
+      renderStatePanel();
+      renderPitchDraft();
+      renderResultDraft();
+      renderChangePanel();
+      renderRibbon();
+      renderPlayerDatalist();
+      updateRecommendedAction();
+
+      saveState();
+    }
+
+    function renderTabs() {
+      document.querySelectorAll(".stepTab").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.tab === activeTab);
+
+        if (tab.dataset.tab === "match") {
+          tab.classList.toggle("complete", state.completed.match);
+        }
+
+        if (tab.dataset.tab === "lineup") {
+          tab.classList.toggle("complete", state.completed.lineup);
+        }
+      });
+
+      document.querySelectorAll(".tabPanel").forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== activeTab;
+      });
+    }
+
+    function setTab(tabName) {
+      activeTab = tabName;
+      renderTabs();
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+      if (tabName === "history") {
+        refreshHistory();
+      }
+    }
+
+    function renderMatch() {
+      $("matchTitle").value = state.match.title;
+      $("matchDate").value = state.match.date;
+      $("matchVenue").value = state.match.venue;
+      $("matchRound").value = state.match.round;
+      $("awayTeam").value = state.match.awayTeam;
+      $("homeTeam").value = state.match.homeTeam;
+    }
+
+    function renderLineups() {
+      $("awayLineupHead").textContent = teamName("away");
+      $("homeLineupHead").textContent = teamName("home");
+
+      buildLineupRows();
+    }
+
+    function renderStatePanel() {
+      $("stateInning").value = String(state.current.inning);
+      $("stateHalf").value = state.current.half;
+      $("stateOuts").value = String(Math.min(state.current.outs, 2));
+      $("batterSide").value = state.current.batterSide;
+      $("stateBatter").value = state.current.batter;
+      $("statePitcher").value = state.current.pitcher;
+      $("stateBase1").value = state.current.bases.first;
+      $("stateBase2").value = state.current.bases.second;
+      $("stateBase3").value = state.current.bases.third;
+
+      $("currentSummaryInning").textContent = inningText();
+      $("summaryBalls").textContent = state.current.balls;
+      $("summaryStrikes").textContent = state.current.strikes;
+      $("summaryOuts").textContent = state.current.outs;
+      $("summaryBatter").textContent = state.current.batter || "未入力";
+      $("summaryPitcher").textContent = state.current.pitcher || "未入力";
+      $("summaryBases").textContent = baseText();
+    }
+
+    function renderRibbon() {
+      $("ribbonInning").textContent = inningText();
+      $("ribbonAttack").textContent = attackTeamName();
+      $("ribbonBatter").textContent = state.current.batter || "未入力";
+      $("ribbonPitcher").textContent = state.current.pitcher || "未入力";
+      $("ribbonCount").textContent =
+        `B${state.current.balls} S${state.current.strikes} O${state.current.outs}`;
+      $("ribbonBases").textContent = shortBaseText();
+    }
+
+    function renderPlayerDatalist() {
+      const names = [
+        ...validPlayers("away"),
+        ...validPlayers("home")
+      ]
+        .map((player) => player.name)
+        .filter(Boolean);
+
+      $("playerNames").innerHTML = [...new Set(names)]
+        .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+        .join("");
+    }
+
+    function renderPitchDraft() {
+      const draft = state.pitchDraft;
+
+      $("selectedZoneText").textContent =
+        draft.zoneLabel || "未選択";
+
+      document.querySelectorAll(".zoneCell").forEach((cell) => {
+        const row = Number(cell.dataset.zoneRow);
+        const col = Number(cell.dataset.zoneCol);
+
+        cell.classList.toggle(
+          "selected",
+          row === draft.zoneRow && col === draft.zoneCol
+        );
+      });
+
+      refreshChoiceSelection(
+        "pitchResultChoices",
+        draft.result
       );
+
+      $("pitchType").value = draft.pitchType;
+      $("pitchSpeed").value = draft.speed;
+      $("pitchDetail").value = draft.detail;
+      $("pitchNumberDisplay").value = `${state.current.pitchNo}球目`;
+      $("pitchTextManual").value = draft.manualText;
+
+      $("pitchTextPreview").textContent = makePitchText() || "投球位置と結果を選択してください。";
     }
 
-    async function sendCommand(command) {
-      if (!API_BASE) {
-        alert("config.js の LIVE_API_BASE が設定されていません。");
-        return;
-      }
+    function renderResultDraft() {
+      const draft = state.resultDraft;
 
-      const password = getEditorPassword();
-
-      if (!password) {
-        alert("編集用パスワードを入力してください。");
-        return;
-      }
-
-      const gameNumber = getGameNumber();
-
-      setStatus("送信中...");
-
-      const res = await fetch(`${API_BASE}/api/games/${gameNumber}/events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${password}`
-        },
-        body: JSON.stringify(command)
+      document.querySelectorAll(".fieldPosition").forEach((button) => {
+        button.classList.toggle(
+          "selected",
+          button.dataset.field === draft.field
+        );
       });
 
-      const data = await res.json().catch(() => ({}));
+      $("selectedFieldText").textContent =
+        draft.field || "未選択";
 
-      if (!res.ok) {
-        console.error(data);
-        setStatus("送信失敗");
-        alert(data.error || "送信に失敗しました。");
-        return;
-      }
+      refreshChoiceSelection(
+        "playResultChoices",
+        draft.playResult
+      );
 
-      setStatus(`送信成功：${command.type} / 試合 #${gameNumber}`);
-      afterSuccessfulSend(command);
+      refreshChoiceSelection(
+        "ballTypeChoices",
+        draft.ballType
+      );
+
+      $("playDetail").value = draft.detail;
+      $("resultRuns").value = String(draft.runs);
+      $("resultHits").value = String(draft.hits);
+      $("resultErrors").value = String(draft.errors);
+      $("resultRbi").value = String(draft.rbi);
+      $("resultOuts").value = String(draft.outs);
+      $("resultBase1").value = draft.base1;
+      $("resultBase2").value = draft.base2;
+      $("resultBase3").value = draft.base3;
+      $("finalCheck").checked = draft.final;
+      $("resultTextManual").value = draft.manualText;
+
+      $("resultTextPreview").textContent =
+        makeResultText() ||
+        "守備位置とプレー結果を選択してください。";
     }
 
-    async function sendLatestCommand() {
-      if (!latestCommand) {
-        alert("先に送信内容を作ってください。");
-        return;
-      }
+    function renderChangePanel() {
+      const selectedTeam = $("changeTeam").value || "away";
+      const players = validPlayers(selectedTeam);
 
-      await sendCommand(latestCommand);
+      $("changeOutPlayer").innerHTML =
+        optionHtml("", "選択") +
+        players.map((player) => {
+          return optionHtml(
+            player.name,
+            `${player.order}. ${player.name} (${player.position || "-"})`
+          );
+        }).join("");
+
+      $("changeTextPreview").textContent =
+        makeChangeText() || "交代内容を入力してください。";
     }
 
-    function afterSuccessfulSend(command) {
-      if (command.type === "pitch") {
-        const next = Math.min(num("pitchNo") + 1, 30);
-        el("pitchNo").value = String(next);
-        saveFormValue(el("pitchNo"));
+    function updateRecommendedAction() {
+      let text = "試合情報を入力";
+      let tab = "match";
+
+      if (state.completed.match && !state.completed.lineup) {
+        text = "スタメンを入力";
+        tab = "lineup";
+      } else if (
+        state.completed.match &&
+        state.completed.lineup &&
+        !state.current.batter
+      ) {
+        text = "現在状況を確認";
+        tab = "state";
+      } else if (
+        state.completed.match &&
+        state.completed.lineup &&
+        state.current.batter
+      ) {
+        text = `${state.current.pitchNo}球目を入力`;
+        tab = "pitch";
       }
 
-      if (command.type === "pa_result") {
-        el("pitchNo").value = "1";
-        el("pitchBall").value = "0";
-        el("pitchStrike").value = "0";
-        el("pitchText").value = "";
-        saveFormValue(el("pitchNo"));
-        saveFormValue(el("pitchBall"));
-        saveFormValue(el("pitchStrike"));
-        saveFormValue(el("pitchText"));
-      }
-    }
-
-    function makeMatchCommand() {
-      return showOutput({
-        type: "match",
-        title: value("matchTitle"),
-        date: value("matchDate"),
-        venue: value("matchVenue"),
-        round: value("matchRound"),
-        awayTeam: value("awayTeam"),
-        homeTeam: value("homeTeam")
-      });
-    }
-
-    async function makeAndSendMatch() {
-      await sendCommand(makeMatchCommand());
-    }
-
-    function makeLineupCommand() {
-      const players = [];
-
-      for (let i = 1; i <= 9; i++) {
-        const name = value(`playerName${i}`).trim();
-        const position = value(`playerPos${i}`);
-
-        if (name || position) {
-          players.push({
-            order: String(i),
-            name,
-            position
-          });
-        }
+      if (state.pitchDraft.result === "インプレー") {
+        text = "打席結果を入力";
+        tab = "result";
       }
 
-      if (!el("pitcherRow").hidden) {
-        const pitcherName = value("pitcherName").trim();
-
-        if (pitcherName) {
-          players.push({
-            order: "P",
-            name: pitcherName,
-            position: "P"
-          });
-        }
-      }
-
-      return showOutput({
-        type: "lineup",
-        team: value("lineupTeam"),
-        players
-      });
+      $("nextRecommended").textContent = text;
+      $("nextRecommended").dataset.targetTab = tab;
     }
 
-    async function makeAndSendLineup() {
-      await sendCommand(makeLineupCommand());
+    function collectMatchInputs() {
+      state.match.title = $("matchTitle").value.trim();
+      state.match.date = $("matchDate").value;
+      state.match.venue = $("matchVenue").value.trim();
+      state.match.round = $("matchRound").value.trim();
+      state.match.awayTeam = $("awayTeam").value.trim();
+      state.match.homeTeam = $("homeTeam").value.trim();
+
+      ensureAutomaticPlayers(false);
+      saveState();
+      renderRibbon();
+    }
+
+    function collectCurrentStateInputs() {
+      state.current.inning = numeric($("stateInning").value) || 1;
+      state.current.half = $("stateHalf").value;
+      state.current.outs = numeric($("stateOuts").value);
+      state.current.batterSide = $("batterSide").value;
+      state.current.batter = $("stateBatter").value.trim();
+      state.current.pitcher = $("statePitcher").value.trim();
+
+      state.current.bases = {
+        first: $("stateBase1").value.trim(),
+        second: $("stateBase2").value.trim(),
+        third: $("stateBase3").value.trim()
+      };
+
+      state.current.balls = 0;
+      state.current.strikes = 0;
+      state.current.pitchNo = 1;
+      state.current.paActive = false;
+
+      ensureAutomaticPlayers(false);
+      saveState();
+      renderAll();
     }
 
     function makePaStartCommand() {
-      return showOutput({
+      return {
         type: "pa_start",
-        inning: num("paInning"),
-        half: value("paHalf"),
-        outs: num("paOuts"),
-        batter: value("paBatter"),
-        pitcher: value("paPitcher"),
-        base1: value("paBase1"),
-        base2: value("paBase2"),
-        base3: value("paBase3")
-      });
+        inning: state.current.inning,
+        half: state.current.half,
+        outs: state.current.outs,
+        batter: state.current.batter,
+        pitcher: state.current.pitcher,
+        batterSide: state.current.batterSide,
+        base1: state.current.bases.first,
+        base2: state.current.bases.second,
+        base3: state.current.bases.third
+      };
     }
 
-    async function makeAndSendPaStart() {
-      await sendCommand(makePaStartCommand());
+    function makePitchText() {
+      const draft = state.pitchDraft;
+
+      if (!draft.result || !draft.zoneLabel) {
+        return "";
+      }
+
+      const pitchNumber = `${state.current.pitchNo}球目`;
+      const pitchType = draft.pitchType
+        ? `${draft.pitchType}`
+        : "投球";
+
+      const location = draft.zoneLabel;
+      const detail = draft.detail
+        ? `。${draft.detail}`
+        : "";
+
+      const nextCount = calculateNextCount(draft.result);
+
+      if (draft.result === "ボール") {
+        return `${pitchNumber}、${location}の${pitchType}はボール。カウント${nextCount.balls}-${nextCount.strikes}${detail}`;
+      }
+
+      if (draft.result === "見逃しストライク") {
+        return `${pitchNumber}、${location}の${pitchType}を見送ってストライク。カウント${nextCount.balls}-${nextCount.strikes}${detail}`;
+      }
+
+      if (draft.result === "空振り") {
+        return `${pitchNumber}、${location}の${pitchType}に空振り。カウント${nextCount.balls}-${nextCount.strikes}${detail}`;
+      }
+
+      if (draft.result === "ファウル") {
+        return `${pitchNumber}、${location}の${pitchType}をファウル。カウント${nextCount.balls}-${nextCount.strikes}${detail}`;
+      }
+
+      if (draft.result === "バントファウル") {
+        return `${pitchNumber}、${location}の${pitchType}をバントするもファウル。カウント${nextCount.balls}-${nextCount.strikes}${detail}`;
+      }
+
+      if (draft.result === "インプレー") {
+        return `${pitchNumber}、${location}の${pitchType}を打ってインプレー${detail}`;
+      }
+
+      if (draft.result === "死球") {
+        return `${pitchNumber}、${location}の${pitchType}が打者に当たりデッドボール${detail}`;
+      }
+
+      if (draft.result === "牽制") {
+        return `投手が走者を牽制${detail}`;
+      }
+
+      if (draft.result === "暴投") {
+        return `${pitchNumber}、${location}の${pitchType}が暴投となる${detail}`;
+      }
+
+      if (draft.result === "捕逸") {
+        return `${pitchNumber}、${location}の${pitchType}を捕手が後逸${detail}`;
+      }
+
+      return `${pitchNumber}、${location}の${pitchType}。${draft.result}${detail}`;
     }
 
-    function autoPitchText() {
-      const pieces = [
-        value("pitchCourse"),
-        value("pitchZone"),
-        value("pitchType"),
-        value("pitchResult"),
-        value("pitchDetail"),
-        value("pitchRunnerEvent")
-      ].filter(Boolean);
+    function calculateNextCount(result) {
+      let balls = state.current.balls;
+      let strikes = state.current.strikes;
 
-      el("pitchText").value = pieces.join(" / ");
-      saveFormValue(el("pitchText"));
+      if (result === "ボール") {
+        balls += 1;
+      }
+
+      if (
+        result === "見逃しストライク" ||
+        result === "空振り"
+      ) {
+        strikes += 1;
+      }
+
+      if (
+        result === "ファウル" ||
+        result === "バントファウル"
+      ) {
+        if (strikes < 2) {
+          strikes += 1;
+        } else if (result === "バントファウル") {
+          strikes += 1;
+        }
+      }
+
+      return {
+        balls,
+        strikes
+      };
     }
 
-    function makePitchCommand() {
-      return showOutput({
+    function isCountedPitch(result) {
+      return result !== "牽制";
+    }
+
+    function makePitchCommand(nextCount) {
+      const draft = state.pitchDraft;
+
+      return {
         type: "pitch",
-        pitchNo: num("pitchNo"),
-        result: value("pitchResult"),
-        detail: value("pitchDetail"),
-        pitchType: value("pitchType"),
-        speed: value("pitchSpeed"),
-        course: value("pitchCourse"),
-        zone: value("pitchZone"),
-        runnerEvent: value("pitchRunnerEvent"),
-        ball: num("pitchBall"),
-        strike: num("pitchStrike"),
-        text: value("pitchText")
-      });
+        pitchNo: state.current.pitchNo,
+        batter: state.current.batter,
+        pitcher: state.current.pitcher,
+        batterSide: state.current.batterSide,
+        result: draft.result,
+        detail: draft.detail,
+        pitchType: draft.pitchType,
+        speed: draft.speed,
+        course: draft.zoneLabel,
+        zone: draft.zoneLabel,
+        zoneRow: draft.zoneRow,
+        zoneCol: draft.zoneCol,
+        ball: nextCount.balls,
+        strike: nextCount.strikes,
+        countedPitch: isCountedPitch(draft.result),
+        text: draft.manualText.trim() || makePitchText()
+      };
     }
 
-    async function makeAndSendPitch() {
-      await sendCommand(makePitchCommand());
+    function resultDisplayName() {
+      const draft = state.resultDraft;
+      const field = draft.field;
+      const play = draft.playResult;
+      const ballType = draft.ballType;
+
+      if (!play) return "";
+
+      if (play === "ヒット") {
+        if (["左", "中", "右"].includes(field)) {
+          return `${field}安`;
+        }
+
+        return "安打";
+      }
+
+      if (play === "内野安打") {
+        return "内野安打";
+      }
+
+      if (play === "二塁打") return "二塁打";
+      if (play === "三塁打") return "三塁打";
+      if (play === "本塁打") return "本塁打";
+      if (play === "野選") return "野選";
+      if (play === "犠打") return "犠打";
+      if (play === "犠飛") return "犠飛";
+      if (play === "併殺") return "併殺打";
+      if (play === "エラー") return `${field || "守備"}失`;
+
+      if (play === "ファウルフライ") {
+        return `${field || "守備"}邪飛`;
+      }
+
+      if (play === "アウト") {
+        if (ballType.includes("ゴロ")) {
+          return `${field || "内野"}ゴロ`;
+        }
+
+        if (ballType.includes("ライナー")) {
+          return `${field || "野手"}直`;
+        }
+
+        if (ballType.includes("フライ")) {
+          return `${field || "野手"}飛`;
+        }
+
+        if (ballType.includes("バント")) {
+          return `${field || "野手"}ゴロ`;
+        }
+
+        return `${field || "守備"}アウト`;
+      }
+
+      return play;
     }
 
-    function autoPaResultText() {
-      const result = value("paResult");
-      const detail = value("paDetail");
-      const runs = num("paRuns");
-      const rbi = num("paRbi");
-      const bases = resultBaseText();
+    function makeResultText() {
+      const draft = state.resultDraft;
+      const result = resultDisplayName();
 
-      const parts = [];
+      if (!result || !draft.field) {
+        return "";
+      }
 
-      if (result) parts.push(result);
-      if (detail) parts.push(detail);
-      if (runs > 0) parts.push(`${runs}点`);
-      if (rbi > 0) parts.push(`${rbi}打点`);
-      parts.push(`打席後：${num("paOutsEnd")}アウト、${bases}`);
+      const pitchPrefix = state.current.pitchNo > 1
+        ? `${state.current.pitchNo - 1}球目、`
+        : "";
 
-      el("paResultText").value = parts.join(" / ");
-      saveFormValue(el("paResultText"));
+      const fieldDescription = makeFieldDescription();
+      const detail = draft.detail ? `。${draft.detail}` : "";
+      const scoreText = draft.runs > 0
+        ? `。このプレーで${draft.runs}点`
+        : "";
+
+      const afterText =
+        `。${draft.outs}アウト、${baseText({
+          first: draft.base1,
+          second: draft.base2,
+          third: draft.base3
+        })}`;
+
+      if (
+        draft.playResult === "ヒット" ||
+        draft.playResult === "内野安打" ||
+        draft.playResult === "二塁打" ||
+        draft.playResult === "三塁打" ||
+        draft.playResult === "本塁打"
+      ) {
+        return `${pitchPrefix}${fieldDescription}への${result}${detail}${scoreText}${afterText}`;
+      }
+
+      if (draft.playResult === "エラー") {
+        return `${pitchPrefix}${fieldDescription}への打球。${draft.field}のエラーで打者が出塁${detail}${scoreText}${afterText}`;
+      }
+
+      if (draft.playResult === "野選") {
+        return `${pitchPrefix}${fieldDescription}への打球。野手選択で打者が出塁${detail}${scoreText}${afterText}`;
+      }
+
+      if (draft.playResult === "犠打") {
+        return `${pitchPrefix}${fieldDescription}への送りバント。打者はアウトとなるが走者が進塁${detail}${scoreText}${afterText}`;
+      }
+
+      if (draft.playResult === "犠飛") {
+        return `${pitchPrefix}${fieldDescription}への犠牲フライ${detail}${scoreText}${afterText}`;
+      }
+
+      if (draft.playResult === "併殺") {
+        return `${pitchPrefix}${fieldDescription}への打球はダブルプレー${detail}${scoreText}${afterText}`;
+      }
+
+      return `${pitchPrefix}${fieldDescription}への打球は${result}${detail}${scoreText}${afterText}`;
     }
 
-    function makePaResultCommand() {
-      return showOutput({
-        type: "pa_result",
-        inning: num("paInning"),
-        half: value("paHalf"),
-        result: value("paResult"),
-        detail: value("paDetail"),
-        outs: num("paOutsEnd"),
-        runs: num("paRuns"),
-        hits: num("paHits"),
-        errors: num("paErrors"),
-        rbi: num("paRbi"),
-        base1: value("resultBase1"),
-        base2: value("resultBase2"),
-        base3: value("resultBase3"),
-        final: value("finalCheck"),
-        text: value("paResultText")
-      });
+    function makeFieldDescription() {
+      const draft = state.resultDraft;
+
+      if (!draft.field) return "";
+
+      if (draft.ballType === "ゴロ") {
+        return `${draft.field}方向のゴロ`;
+      }
+
+      if (draft.ballType === "ライナー") {
+        return `${draft.field}方向のライナー`;
+      }
+
+      if (draft.ballType === "フライ") {
+        return `${draft.field}方向のフライ`;
+      }
+
+      if (draft.ballType === "バント") {
+        return `${draft.field}方向のバント`;
+      }
+
+      if (draft.ballType === "強い打球") {
+        return `${draft.field}方向への強い打球`;
+      }
+
+      if (draft.ballType === "弱い打球") {
+        return `${draft.field}方向への緩い打球`;
+      }
+
+      return `${draft.field}方向の打球`;
     }
 
-    async function makeAndSendPaResult() {
-      await sendCommand(makePaResultCommand());
+    function suggestResultState() {
+      const draft = state.resultDraft;
+      const currentBases = state.current.bases;
+      const batter = state.current.batter;
+
+      let runs = 0;
+      let hits = 0;
+      let errors = 0;
+      let outs = state.current.outs;
+
+      let first = currentBases.first;
+      let second = currentBases.second;
+      let third = currentBases.third;
+
+      switch (draft.playResult) {
+        case "アウト":
+        case "ファウルフライ":
+          outs += 1;
+          break;
+
+        case "内野安打":
+        case "ヒット":
+          hits = 1;
+
+          if (third) runs += 1;
+
+          third = second;
+          second = first;
+          first = batter;
+          break;
+
+        case "二塁打":
+          hits = 1;
+
+          if (third) runs += 1;
+          if (second) runs += 1;
+
+          third = first;
+          second = batter;
+          first = "";
+          break;
+
+        case "三塁打":
+          hits = 1;
+          runs += [first, second, third].filter(Boolean).length;
+
+          first = "";
+          second = "";
+          third = batter;
+          break;
+
+        case "本塁打":
+          hits = 1;
+          runs += [first, second, third].filter(Boolean).length + 1;
+
+          first = "";
+          second = "";
+          third = "";
+          break;
+
+        case "エラー":
+          errors = 1;
+
+          if (third) runs += 1;
+
+          third = second;
+          second = first;
+          first = batter;
+          break;
+
+        case "野選":
+          first = batter;
+          break;
+
+        case "犠打":
+          outs += 1;
+
+          third = second;
+          second = first;
+          first = "";
+          break;
+
+        case "犠飛":
+          outs += 1;
+
+          if (third) {
+            runs += 1;
+            third = "";
+          }
+          break;
+
+        case "併殺":
+          outs += 2;
+          first = "";
+          break;
+      }
+
+      draft.runs = runs;
+      draft.hits = hits;
+      draft.errors = errors;
+      draft.rbi = runs;
+      draft.outs = Math.min(3, outs);
+      draft.base1 = first || "";
+      draft.base2 = second || "";
+      draft.base3 = third || "";
+
+      saveState();
     }
 
-    function makeNoteCommand() {
-      return showOutput({
-        type: "note",
-        inning: num("noteInning"),
-        half: value("noteHalf"),
-        category: value("noteCategory"),
-        target: value("noteTarget"),
-        text: [value("noteTarget"), value("noteText")].filter(Boolean).join(" / ")
-      });
+    function forceAdvanceForWalk() {
+      const bases = state.current.bases;
+      const batter = state.current.batter;
+
+      let runs = 0;
+      let first = bases.first;
+      let second = bases.second;
+      let third = bases.third;
+
+      if (first && second && third) {
+        runs = 1;
+      }
+
+      if (first && second) {
+        third = second;
+      }
+
+      if (first) {
+        second = first;
+      }
+
+      first = batter;
+
+      return {
+        runs,
+        bases: {
+          first,
+          second,
+          third
+        }
+      };
     }
 
-    async function makeAndSendNote() {
-      await sendCommand(makeNoteCommand());
+    function advanceBatter() {
+      const offense = getOffenseTeam();
+      const lineup = validPlayers(offense);
+
+      if (lineup.length) {
+        state.current.batterIndex[offense] =
+          (numeric(state.current.batterIndex[offense]) + 1) % lineup.length;
+      }
+
+      state.current.batter = automaticBatter();
     }
 
-    function openViewPage() {
-      const gameNumber = getGameNumber();
-      window.open(`./index.html?game=${gameNumber}`, "_blank");
-    }
-
-    function saveFormValue(target) {
-      if (!target || !target.id || !target.hasAttribute("data-save")) return;
-
-      const key = `${STORAGE_PREFIX}${target.id}`;
-
-      if (target.type === "checkbox") {
-        localStorage.setItem(key, target.checked ? "1" : "0");
+    function switchHalfInning() {
+      if (state.current.half === "top") {
+        state.current.half = "bottom";
       } else {
-        localStorage.setItem(key, target.value);
+        state.current.half = "top";
+        state.current.inning += 1;
+      }
+
+      state.current.outs = 0;
+      state.current.bases = {
+        first: "",
+        second: "",
+        third: ""
+      };
+
+      state.current.batter = automaticBatter();
+      state.current.pitcher = automaticPitcher();
+    }
+
+    function finishPlateAppearance(next) {
+      state.current.outs = numeric(next.outs);
+      state.current.bases = {
+        first: next.base1 || "",
+        second: next.base2 || "",
+        third: next.base3 || ""
+      };
+
+      state.current.balls = 0;
+      state.current.strikes = 0;
+      state.current.pitchNo = 1;
+      state.current.paActive = false;
+
+      advanceBatter();
+
+      if (state.current.outs >= 3 && !next.final) {
+        switchHalfInning();
+      } else {
+        state.current.pitcher = automaticPitcher();
+      }
+
+      clearPitchDraft(false);
+      resetResultDraft();
+
+      saveState();
+      renderAll();
+    }
+
+    function clearPitchDraft(render = true) {
+      state.pitchDraft = {
+        zoneRow: null,
+        zoneCol: null,
+        zoneLabel: "",
+        result: "",
+        pitchType: state.pitchDraft.pitchType || "",
+        speed: "",
+        detail: "",
+        manualText: ""
+      };
+
+      saveState();
+
+      if (render) {
+        renderPitchDraft();
       }
     }
 
-    function restoreFormValues() {
-      document.querySelectorAll("[data-save]").forEach((target) => {
-        const key = `${STORAGE_PREFIX}${target.id}`;
-        const saved = localStorage.getItem(key);
-
-        if (saved === null) return;
-
-        if (target.type === "checkbox") {
-          target.checked = saved === "1";
-        } else {
-          target.value = saved;
-        }
-      });
+    function resetResultDraft() {
+      state.resultDraft = {
+        field: "",
+        playResult: "",
+        ballType: "",
+        detail: "",
+        runs: 0,
+        hits: 0,
+        errors: 0,
+        rbi: 0,
+        outs: state.current.outs,
+        base1: state.current.bases.first,
+        base2: state.current.bases.second,
+        base3: state.current.bases.third,
+        final: false,
+        manualText: ""
+      };
     }
 
-    function setupAutoSave() {
+    function buildResultCommand() {
+      const draft = state.resultDraft;
+
+      return {
+        type: "pa_result",
+        inning: state.current.inning,
+        half: state.current.half,
+        batter: state.current.batter,
+        pitcher: state.current.pitcher,
+        result: resultDisplayName(),
+        detail: draft.detail || draft.playResult,
+        fieldPosition: draft.field,
+        playResult: draft.playResult,
+        ballType: draft.ballType,
+        outs: draft.outs,
+        runs: draft.runs,
+        hits: draft.hits,
+        errors: draft.errors,
+        rbi: draft.rbi,
+        base1: draft.base1,
+        base2: draft.base2,
+        base3: draft.base3,
+        final: draft.final,
+        text: draft.manualText.trim() || makeResultText()
+      };
+    }
+
+    async function apiRequest(path, options = {}) {
+      if (!API_BASE) {
+        throw new Error("config.js にWorker URLが設定されていません。");
+      }
+
+      const password =
+        $("editorPassword").value ||
+        sessionStorage.getItem(PASSWORD_SESSION_KEY) ||
+        "";
+
+      const headers = {
+        ...(options.headers || {})
+      };
+
+      if (options.body) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      if (options.method && options.method !== "GET") {
+        if (!password) {
+          throw new Error("編集パスワードを入力してください。");
+        }
+
+        headers.Authorization = `Bearer ${password}`;
+      }
+
+      const response = await fetch(`${API_BASE}${path}`, {
+        cache: "no-store",
+        ...options,
+        headers
+      });
+
+      let data = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+          `APIエラー ${response.status}`
+        );
+      }
+
+      return data;
+    }
+
+    async function sendCommands(commands, successMessage) {
+      if (sending) return [];
+
+      setSending(true);
+      setConnectionState("送信中", "sending");
+
+      const results = [];
+
+      try {
+        for (const command of commands) {
+          const result = await apiRequest(
+            `/api/games/${state.gameNo}/events`,
+            {
+              method: "POST",
+              body: JSON.stringify(command)
+            }
+          );
+
+          results.push(result);
+        }
+
+        setConnectionState("送信済み", "success");
+        showToast(successMessage);
+        return results;
+      } catch (error) {
+        console.error(error);
+        setConnectionState("送信失敗", "error");
+        showToast(error.message);
+        throw error;
+      } finally {
+        setSending(false);
+      }
+    }
+
+    async function sendMatch() {
+      collectMatchInputs();
+
+      await sendCommands(
+        [{
+          type: "match",
+          ...state.match
+        }],
+        "試合情報を送信しました"
+      );
+
+      state.completed.match = true;
+      saveState();
+      setTab("lineup");
+    }
+
+    async function sendLineups() {
+      const awayPlayers = validPlayers("away");
+      const homePlayers = validPlayers("home");
+
+      if (!awayPlayers.length || !homePlayers.length) {
+        showToast("両チームの選手を入力してください。");
+        return;
+      }
+
+      await sendCommands(
+        [
+          {
+            type: "lineup",
+            team: "away",
+            players: awayPlayers
+          },
+          {
+            type: "lineup",
+            team: "home",
+            players: homePlayers
+          }
+        ],
+        "両チームのスタメンを送信しました"
+      );
+
+      state.completed.lineup = true;
+      ensureAutomaticPlayers(true);
+      saveState();
+      renderAll();
+      setTab("state");
+    }
+
+    async function startPlateAppearance() {
+      collectCurrentStateInputs();
+
+      if (!state.current.batter || !state.current.pitcher) {
+        showToast("打者と投手を確認してください。");
+        return;
+      }
+
+      await sendCommands(
+        [makePaStartCommand()],
+        "打席を開始しました"
+      );
+
+      state.current.paActive = true;
+      saveState();
+      renderAll();
+      setTab("pitch");
+    }
+
+    async function ensurePlateAppearanceStarted() {
+      if (state.current.paActive) return;
+
+      if (!state.current.batter || !state.current.pitcher) {
+        ensureAutomaticPlayers(true);
+      }
+
+      if (!state.current.batter || !state.current.pitcher) {
+        throw new Error("打者または投手が未入力です。");
+      }
+
+      await sendCommands(
+        [makePaStartCommand()],
+        "打席を自動開始しました"
+      );
+
+      state.current.paActive = true;
+      saveState();
+    }
+
+    async function sendPitch() {
+      const draft = state.pitchDraft;
+
+      if (!draft.zoneLabel) {
+        showToast("投球位置を選択してください。");
+        return;
+      }
+
+      if (!draft.result) {
+        showToast("投球結果を選択してください。");
+        return;
+      }
+
+      await ensurePlateAppearanceStarted();
+
+      const nextCount = calculateNextCount(draft.result);
+      const command = makePitchCommand(nextCount);
+
+      await sendCommands(
+        [command],
+        `${state.current.pitchNo}球目を送信しました`
+      );
+
+      state.current.balls = nextCount.balls;
+      state.current.strikes = nextCount.strikes;
+
+      if (isCountedPitch(draft.result)) {
+        state.current.pitchNo += 1;
+      }
+
+      const result = draft.result;
+
+      if (
+        state.current.strikes >= 3 &&
+        result !== "ファウル"
+      ) {
+        await sendAutomaticPlateResult("空振り三振");
+        return;
+      }
+
+      if (state.current.balls >= 4) {
+        await sendAutomaticPlateResult("四球");
+        return;
+      }
+
+      if (result === "死球") {
+        await sendAutomaticPlateResult("死球");
+        return;
+      }
+
+      if (result === "インプレー") {
+        resetResultDraft();
+        state.resultDraft.outs = state.current.outs;
+        saveState();
+        renderResultDraft();
+        setTab("result");
+        return;
+      }
+
+      clearPitchDraft(false);
+      saveState();
+      renderAll();
+      setTab("pitch");
+    }
+
+    async function sendAutomaticPlateResult(result) {
+      let command = null;
+      let next = null;
+
+      if (result === "四球" || result === "死球") {
+        const advanced = forceAdvanceForWalk();
+
+        command = {
+          type: "pa_result",
+          inning: state.current.inning,
+          half: state.current.half,
+          batter: state.current.batter,
+          pitcher: state.current.pitcher,
+          result,
+          detail: result,
+          outs: state.current.outs,
+          runs: advanced.runs,
+          hits: 0,
+          errors: 0,
+          rbi: result === "四球" ? advanced.runs : 0,
+          base1: advanced.bases.first,
+          base2: advanced.bases.second,
+          base3: advanced.bases.third,
+          final: false,
+          text:
+            `${state.current.pitchNo - 1}球目、${result}。` +
+            `${state.current.outs}アウト、${baseText(advanced.bases)}`
+        };
+
+        next = {
+          outs: state.current.outs,
+          base1: advanced.bases.first,
+          base2: advanced.bases.second,
+          base3: advanced.bases.third,
+          final: false
+        };
+      } else {
+        const outs = Math.min(3, state.current.outs + 1);
+
+        command = {
+          type: "pa_result",
+          inning: state.current.inning,
+          half: state.current.half,
+          batter: state.current.batter,
+          pitcher: state.current.pitcher,
+          result,
+          detail: result,
+          outs,
+          runs: 0,
+          hits: 0,
+          errors: 0,
+          rbi: 0,
+          base1: state.current.bases.first,
+          base2: state.current.bases.second,
+          base3: state.current.bases.third,
+          final: false,
+          text:
+            `${state.current.pitchNo - 1}球目、${result}。` +
+            `${outs}アウト、${baseText()}`
+        };
+
+        next = {
+          outs,
+          base1: state.current.bases.first,
+          base2: state.current.bases.second,
+          base3: state.current.bases.third,
+          final: false
+        };
+      }
+
+      await sendCommands(
+        [command],
+        `${result}として打席を終了しました`
+      );
+
+      finishPlateAppearance(next);
+      setTab("pitch");
+    }
+
+    async function sendResult() {
+      const draft = state.resultDraft;
+
+      if (!draft.field) {
+        showToast("打球位置を選択してください。");
+        return;
+      }
+
+      if (!draft.playResult) {
+        showToast("プレー結果を選択してください。");
+        return;
+      }
+
+      const command = buildResultCommand();
+      const wasFinal = draft.final;
+
+      await sendCommands(
+        [command],
+        "打席結果を送信しました"
+      );
+
+      finishPlateAppearance({
+        outs: draft.outs,
+        base1: draft.base1,
+        base2: draft.base2,
+        base3: draft.base3,
+        final: wasFinal
+      });
+
+      if (wasFinal) {
+        state.current.final = true;
+        saveState();
+        setTab("history");
+      } else {
+        setTab("pitch");
+      }
+    }
+
+    function makeChangeText() {
+      const team = $("changeTeam")?.value || "away";
+      const type = $("changeType")?.value || "";
+      const outPlayer = $("changeOutPlayer")?.value || "";
+      const inPlayer = $("changeInPlayer")?.value.trim() || "";
+      const position = $("changePosition")?.value || "";
+
+      if (!type || !inPlayer) return "";
+
+      const teamLabel = teamName(team);
+
+      if (type === "投手交代") {
+        return `${teamLabel}、投手交代。${
+          outPlayer ? `${outPlayer}に代わって` : ""
+        }${inPlayer}がマウンドへ。`;
+      }
+
+      if (type === "代打") {
+        return `${teamLabel}、${outPlayer || "打者"}に代わって代打${inPlayer}。`;
+      }
+
+      if (type === "代走") {
+        return `${teamLabel}、${outPlayer || "走者"}に代わって代走${inPlayer}。`;
+      }
+
+      if (type === "守備位置変更") {
+        return `${teamLabel}、${outPlayer || inPlayer}が${position || "守備位置"}へ移動。`;
+      }
+
+      return `${teamLabel}、選手交代。${
+        outPlayer ? `${outPlayer}に代わって` : ""
+      }${inPlayer}${position ? `が${position}に入る` : ""}。`;
+    }
+
+    async function sendPlayerChange() {
+      const team = $("changeTeam").value;
+      const type = $("changeType").value;
+      const outPlayer = $("changeOutPlayer").value;
+      const inPlayer = $("changeInPlayer").value.trim();
+      const position = $("changePosition").value;
+
+      if (!inPlayer) {
+        showToast("新しい選手名を入力してください。");
+        return;
+      }
+
+      const lineup = state.lineups[team];
+      let index = lineup.findIndex(
+        (player) => player.name === outPlayer
+      );
+
+      if (index < 0) {
+        index = lineup.findIndex((player) => !player.name);
+      }
+
+      if (index < 0) {
+        showToast("交代枠を特定できません。");
+        return;
+      }
+
+      lineup[index] = {
+        ...lineup[index],
+        name: inPlayer,
+        position: position || lineup[index].position
+      };
+
+      const noteText = makeChangeText();
+
+      await sendCommands(
+        [
+          {
+            type: "lineup",
+            team,
+            players: validPlayers(team)
+          },
+          {
+            type: "note",
+            inning: state.current.inning,
+            half: state.current.half,
+            category: type,
+            target: teamName(team),
+            text: noteText
+          }
+        ],
+        "選手交代を反映しました"
+      );
+
+      if (state.current.batter === outPlayer) {
+        state.current.batter = inPlayer;
+      }
+
+      if (
+        state.current.pitcher === outPlayer ||
+        type === "投手交代"
+      ) {
+        state.current.pitcher = inPlayer;
+      }
+
+      $("changeInPlayer").value = "";
+
+      saveState();
+      renderAll();
+      setTab("pitch");
+    }
+
+    async function sendNote() {
+      const category = $("noteCategory").value;
+      const target = $("noteTarget").value.trim();
+      const text = $("noteText").value.trim();
+
+      if (!text) {
+        showToast("本文を入力してください。");
+        return;
+      }
+
+      await sendCommands(
+        [{
+          type: "note",
+          inning: state.current.inning,
+          half: state.current.half,
+          category,
+          target,
+          text
+        }],
+        "出来事を送信しました"
+      );
+
+      $("noteTarget").value = "";
+      $("noteText").value = "";
+    }
+
+    async function refreshHistory() {
+      const container = $("historyList");
+
+      container.innerHTML =
+        `<div class="emptyBox">読み込み中...</div>`;
+
+      try {
+        const data = await apiRequest(
+          `/api/games/${state.gameNo}`,
+          {
+            method: "GET"
+          }
+        );
+
+        const events = data.rawEvents || [];
+
+        if (!events.length) {
+          container.innerHTML =
+            `<div class="emptyBox">送信履歴はありません。</div>`;
+          return;
+        }
+
+        container.innerHTML = events.map((event) => {
+          const summary = historySummary(event);
+
+          return `
+            <article class="historyItem">
+              <div class="historyType">
+                ${escapeHtml(TYPE_LABELS[event.type] || event.type)}
+              </div>
+
+              <div class="historyBody">
+                <strong>${escapeHtml(summary.title)}</strong>
+                <p>${escapeHtml(summary.text)}</p>
+              </div>
+
+              <button
+                type="button"
+                class="miniButton"
+                data-delete-event="${escapeHtml(event.id)}"
+              >
+                削除
+              </button>
+            </article>
+          `;
+        }).join("");
+      } catch (error) {
+        container.innerHTML =
+          `<div class="emptyBox">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function historySummary(event) {
+      if (event.type === "match") {
+        return {
+          title: event.title || "試合情報",
+          text: `${event.awayTeam || "先攻"} vs ${event.homeTeam || "後攻"}`
+        };
+      }
+
+      if (event.type === "lineup") {
+        return {
+          title: `${event.team === "home" ? "後攻" : "先攻"}スタメン`,
+          text: `${event.players?.length || 0}人`
+        };
+      }
+
+      if (event.type === "pa_start") {
+        return {
+          title:
+            `${event.inning}回` +
+            `${event.half === "top" ? "表" : "裏"} 打席開始`,
+          text:
+            `打者 ${event.batter || "-"} / ` +
+            `投手 ${event.pitcher || "-"}`
+        };
+      }
+
+      if (event.type === "pitch") {
+        return {
+          title:
+            `${event.pitchNo || "-"}球目 ` +
+            `${event.result || ""}`,
+          text: event.text || event.course || ""
+        };
+      }
+
+      if (event.type === "pa_result") {
+        return {
+          title: `打席結果 ${event.result || ""}`,
+          text: event.text || ""
+        };
+      }
+
+      return {
+        title: event.category || "出来事",
+        text: event.text || ""
+      };
+    }
+
+    async function deleteEvent(eventId) {
+      const confirmed = window.confirm(
+        "このイベントを削除します。削除後、試合データは再計算されます。"
+      );
+
+      if (!confirmed) return;
+
+      try {
+        await apiRequest(
+          `/api/games/${state.gameNo}/events/${eventId}`,
+          {
+            method: "DELETE"
+          }
+        );
+
+        showToast("削除しました");
+        await refreshHistory();
+      } catch (error) {
+        showToast(error.message);
+      }
+    }
+
+    async function syncEditorFromServer() {
+      try {
+        setConnectionState("同期中", "sending");
+
+        const data = await apiRequest(
+          `/api/games/${state.gameNo}`,
+          {
+            method: "GET"
+          }
+        );
+
+        state.match = {
+          ...state.match,
+          ...(data.match || {})
+        };
+
+        state.lineups.away =
+          normalizeLineup(data.lineups?.away);
+
+        state.lineups.home =
+          normalizeLineup(data.lineups?.home);
+
+        const serverState = data.currentState || {};
+
+        const inningMatch =
+          String(serverState.inningLabel || "")
+            .match(/(\d+)回(表|裏)/);
+
+        if (inningMatch) {
+          state.current.inning = Number(inningMatch[1]);
+          state.current.half =
+            inningMatch[2] === "表" ? "top" : "bottom";
+        }
+
+        state.current.outs = numeric(serverState.outs);
+        state.current.balls = numeric(serverState.ball);
+        state.current.strikes = numeric(serverState.strike);
+
+        state.current.bases = {
+          first: serverState.bases?.first || "",
+          second: serverState.bases?.second || "",
+          third: serverState.bases?.third || ""
+        };
+
+        state.current.batter =
+          serverState.batter || "";
+
+        state.current.pitcher =
+          serverState.pitcher || "";
+
+        const atBats = data.atBats || [];
+        const lastAtBat = atBats.at(-1);
+
+        state.current.paActive =
+          Boolean(lastAtBat && !lastAtBat.result);
+
+        state.current.pitchNo =
+          (lastAtBat?.pitches?.length || 0) + 1;
+
+        state.current.final =
+          data.isFinal === true;
+
+        state.completed.match =
+          Boolean(
+            data.match?.awayTeam ||
+            data.match?.homeTeam
+          );
+
+        state.completed.lineup =
+          Boolean(
+            data.lineups?.away?.length &&
+            data.lineups?.home?.length
+          );
+
+        saveState();
+        renderAll();
+
+        setConnectionState("同期済み", "success");
+        showToast("サーバー内容と同期しました");
+      } catch (error) {
+        setConnectionState("同期失敗", "error");
+        showToast(error.message);
+      }
+    }
+
+    function setupListeners() {
+      document.querySelectorAll(".stepTab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          setTab(tab.dataset.tab);
+        });
+      });
+
+      document
+        .querySelectorAll("[data-next-tab]")
+        .forEach((button) => {
+          button.addEventListener("click", () => {
+            setTab(button.dataset.nextTab);
+          });
+        });
+
+      $("nextRecommended").addEventListener("click", () => {
+        setTab(
+          $("nextRecommended").dataset.targetTab || "pitch"
+        );
+      });
+
+      $("gameNumber").addEventListener("change", () => {
+        const newGame = Math.max(
+          1,
+          numeric($("gameNumber").value)
+        );
+
+        saveState();
+
+        state = loadState(newGame);
+        activeTab = "match";
+
+        renderAll();
+
+        showToast(
+          `試合 #${newGame} に切り替えました`
+        );
+      });
+
+      $("editorPassword").addEventListener("input", () => {
+        sessionStorage.setItem(
+          PASSWORD_SESSION_KEY,
+          $("editorPassword").value
+        );
+      });
+
+      [
+        "matchTitle",
+        "matchDate",
+        "matchVenue",
+        "matchRound",
+        "awayTeam",
+        "homeTeam"
+      ].forEach((id) => {
+        $(id).addEventListener("input", () => {
+          collectMatchInputs();
+          renderLineups();
+          renderRibbon();
+          renderChangePanel();
+        });
+      });
+
       document.addEventListener("input", (event) => {
-        saveFormValue(event.target);
+        const target = event.target;
+
+        if (!target.dataset.lineupTeam) return;
+
+        const team = target.dataset.lineupTeam;
+        const index = Number(
+          target.dataset.lineupIndex
+        );
+        const field = target.dataset.lineupField;
+
+        state.lineups[team][index][field] =
+          target.value;
+
+        ensureAutomaticPlayers(false);
+        saveState();
+        renderPlayerDatalist();
+        renderRibbon();
       });
 
       document.addEventListener("change", (event) => {
-        saveFormValue(event.target);
+        const target = event.target;
+
+        if (!target.dataset.lineupTeam) return;
+
+        const team = target.dataset.lineupTeam;
+        const index = Number(
+          target.dataset.lineupIndex
+        );
+        const field = target.dataset.lineupField;
+
+        state.lineups[team][index][field] =
+          target.value;
+
+        ensureAutomaticPlayers(false);
+        saveState();
+        renderPlayerDatalist();
+        renderRibbon();
       });
-    }
 
-    function initControls() {
-      fillInningSelect("paInning");
-      fillInningSelect("noteInning");
+      $("sendMatch").addEventListener("click", () => {
+        sendMatch().catch(() => {});
+      });
 
-      fillNumberSelect("paOuts", 2);
-      fillNumberSelect("paOutsEnd", 3);
-      fillNumberSelect("pitchNo", 30, 1);
-      fillNumberSelect("pitchBall", 3);
-      fillNumberSelect("pitchStrike", 2);
-      fillSpeedSelect("pitchSpeed");
-      fillNumberSelect("paRuns", 20);
-      fillNumberSelect("paHits", 20);
-      fillNumberSelect("paErrors", 20);
-      fillNumberSelect("paRbi", 4);
+      $("sendLineups").addEventListener("click", () => {
+        sendLineups().catch(() => {});
+      });
 
-      fillSelect("pitchResult", pitchResults);
-      fillSelect("pitchDetail", pitchDetails);
-      fillSelect("pitchType", pitchTypes);
-      fillSelect("pitchCourse", pitchCourses);
-      fillSelect("pitchZone", pitchZones);
-      fillSelect("pitchRunnerEvent", runnerEvents);
-      fillSelect("paResult", paResults);
-      fillSelect("paDetail", paDetails);
-      fillSelect("noteCategory", noteCategories);
+      $("applyCurrentState").addEventListener(
+        "click",
+        () => {
+          collectCurrentStateInputs();
+          showToast("現在状況を反映しました");
+        }
+      );
 
-      buildLineupRows();
-      fillLineupTeamSelect();
+      $("startPlateAppearance").addEventListener(
+        "click",
+        () => {
+          startPlateAppearance().catch(() => {});
+        }
+      );
+
+      $("pitchType").addEventListener("change", () => {
+        state.pitchDraft.pitchType =
+          $("pitchType").value;
+
+        saveState();
+        renderPitchDraft();
+      });
+
+      $("pitchSpeed").addEventListener("change", () => {
+        state.pitchDraft.speed =
+          $("pitchSpeed").value;
+
+        saveState();
+        renderPitchDraft();
+      });
+
+      $("pitchDetail").addEventListener("change", () => {
+        state.pitchDraft.detail =
+          $("pitchDetail").value;
+
+        saveState();
+        renderPitchDraft();
+      });
+
+      $("pitchTextManual").addEventListener(
+        "input",
+        () => {
+          state.pitchDraft.manualText =
+            $("pitchTextManual").value;
+
+          saveState();
+        }
+      );
+
+      $("sendPitch").addEventListener("click", () => {
+        sendPitch().catch(() => {});
+      });
+
+      $("clearPitchDraft").addEventListener(
+        "click",
+        () => {
+          clearPitchDraft();
+        }
+      );
+
+      $("fieldDiagram").addEventListener(
+        "click",
+        (event) => {
+          const button =
+            event.target.closest("[data-field]");
+
+          if (!button) return;
+
+          state.resultDraft.field =
+            button.dataset.field;
+
+          suggestResultState();
+          saveState();
+          renderResultDraft();
+        }
+      );
+
+      $("playDetail").addEventListener(
+        "change",
+        () => {
+          state.resultDraft.detail =
+            $("playDetail").value;
+
+          saveState();
+          renderResultDraft();
+        }
+      );
+
+      [
+        ["resultRuns", "runs"],
+        ["resultHits", "hits"],
+        ["resultErrors", "errors"],
+        ["resultRbi", "rbi"],
+        ["resultOuts", "outs"],
+        ["resultBase1", "base1"],
+        ["resultBase2", "base2"],
+        ["resultBase3", "base3"]
+      ].forEach(([id, key]) => {
+        $(id).addEventListener("input", () => {
+          state.resultDraft[key] =
+            [
+              "runs",
+              "hits",
+              "errors",
+              "rbi",
+              "outs"
+            ].includes(key)
+              ? numeric($(id).value)
+              : $(id).value.trim();
+
+          saveState();
+          renderResultDraft();
+        });
+
+        $(id).addEventListener("change", () => {
+          state.resultDraft[key] =
+            [
+              "runs",
+              "hits",
+              "errors",
+              "rbi",
+              "outs"
+            ].includes(key)
+              ? numeric($(id).value)
+              : $(id).value.trim();
+
+          saveState();
+          renderResultDraft();
+        });
+      });
+
+      $("finalCheck").addEventListener(
+        "change",
+        () => {
+          state.resultDraft.final =
+            $("finalCheck").checked;
+
+          saveState();
+        }
+      );
+
+      $("resultTextManual").addEventListener(
+        "input",
+        () => {
+          state.resultDraft.manualText =
+            $("resultTextManual").value;
+
+          saveState();
+        }
+      );
+
+      $("suggestResultAgain").addEventListener(
+        "click",
+        () => {
+          suggestResultState();
+          renderResultDraft();
+
+          showToast(
+            "一般的な進塁を再提案しました"
+          );
+        }
+      );
+
+      $("sendResult").addEventListener("click", () => {
+        sendResult().catch(() => {});
+      });
+
+      $("changeTeam").addEventListener(
+        "change",
+        () => {
+          renderChangePanel();
+        }
+      );
+
+      [
+        "changeType",
+        "changeOutPlayer",
+        "changeInPlayer",
+        "changePosition"
+      ].forEach((id) => {
+        $(id).addEventListener(
+          "input",
+          renderChangePanel
+        );
+
+        $(id).addEventListener(
+          "change",
+          renderChangePanel
+        );
+      });
+
+      $("sendPlayerChange").addEventListener(
+        "click",
+        () => {
+          sendPlayerChange().catch(() => {});
+        }
+      );
+
+      $("sendNote").addEventListener("click", () => {
+        sendNote().catch(() => {});
+      });
+
+      $("refreshHistory").addEventListener(
+        "click",
+        refreshHistory
+      );
+
+      $("syncFromServer").addEventListener(
+        "click",
+        syncEditorFromServer
+      );
+
+      $("serverSyncTop").addEventListener(
+        "click",
+        syncEditorFromServer
+      );
+
+      $("historyList").addEventListener(
+        "click",
+        (event) => {
+          const button =
+            event.target.closest(
+              "[data-delete-event]"
+            );
+
+          if (!button) return;
+
+          deleteEvent(
+            button.dataset.deleteEvent
+          );
+        }
+      );
+
+      window.addEventListener(
+        "beforeunload",
+        saveState
+      );
     }
 
     function init() {
-      initControls();
-      setupAutoSave();
-      restoreFormValues();
+      const savedGame = Math.max(
+        1,
+        numeric(
+          localStorage.getItem(LAST_GAME_KEY)
+        ) || 1
+      );
 
-      if (!value("gameNumber")) {
-        el("gameNumber").value = "1";
+      state = loadState(savedGame);
+
+      $("gameNumber").value =
+        String(savedGame);
+
+      $("editorPassword").value =
+        sessionStorage.getItem(
+          PASSWORD_SESSION_KEY
+        ) || "";
+
+      setupStaticControls();
+      setupListeners();
+
+      resetResultDraftIfMissing();
+      renderAll();
+    }
+
+    function resetResultDraftIfMissing() {
+      if (!state.resultDraft) {
+        resetResultDraft();
       }
 
-      const savedPassword =
-        sessionStorage.getItem(PASSWORD_KEY) ||
-        localStorage.getItem(PASSWORD_KEY) ||
-        "";
-
-      if (savedPassword) {
-        el("editorPassword").value = savedPassword;
+      if (
+        state.resultDraft.outs === undefined ||
+        state.resultDraft.outs === null
+      ) {
+        state.resultDraft.outs =
+          state.current.outs;
       }
-
-      syncTeamNames();
-      checkDh();
     }
 
     init();
